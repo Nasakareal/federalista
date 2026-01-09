@@ -66,6 +66,22 @@
 
     nav.navbar-rosa .nav-link.active,
     nav.navbar-rosa .dropdown-item.active { color:#fff !important; }
+
+    /* ====== FIX MÓVIL: Offcanvas por defecto es BLANCO y tus links están en BLANCO -> no se ven ====== */
+    nav.navbar-rosa .offcanvas{
+      background: var(--rosa-2);
+      color:#fff;
+    }
+    nav.navbar-rosa .offcanvas .offcanvas-title{color:#fff}
+    nav.navbar-rosa .offcanvas .btn-close{filter: invert(1) grayscale(100%);}
+    nav.navbar-rosa .offcanvas .nav-link{color:#fff !important}
+    nav.navbar-rosa .offcanvas .dropdown-menu{
+      background: rgba(255,255,255,.12);
+      border-color: rgba(255,255,255,.2);
+    }
+    nav.navbar-rosa .offcanvas .dropdown-item{color:#fff}
+    nav.navbar-rosa .offcanvas .dropdown-item:hover{background: rgba(255,255,255,.12)}
+    nav.navbar-rosa .offcanvas .dropdown-divider{border-color: rgba(255,255,255,.25)}
   </style>
 
   {{-- Acepta ambos stacks para CSS de vistas --}}
@@ -95,7 +111,7 @@
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="mainNav" aria-labelledby="mainNavLabel">
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="mainNav" aria-labelledby="mainNavLabel" data-bs-theme="dark">
       <div class="offcanvas-header">
         <h5 class="offcanvas-title" id="mainNavLabel">Menú</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
@@ -224,33 +240,48 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   // Cerrar dropdowns al hacer click fuera
-  document.addEventListener('click', (e)=>{
+  document.addEventListener('click', (e) => {
     const openMenus = document.querySelectorAll('.dropdown-menu.show');
-    openMenus.forEach(menu=>{
-      if(!menu.parentElement.contains(e.target)){
+    openMenus.forEach(menu => {
+      if (!menu.parentElement.contains(e.target)) {
         const toggle = menu.parentElement.querySelector('[data-bs-toggle="dropdown"]');
-        bootstrap.Dropdown.getInstance(toggle)?.hide();
+        const inst = toggle ? bootstrap.Dropdown.getInstance(toggle) : null;
+        inst?.hide();
       }
     });
   });
 
   // Cerrar dropdown al salir con el mouse (hover persistente)
-  document.querySelectorAll('.dropdown.keep-open').forEach(dd=>{
-    let to=null;
-    dd.addEventListener('mouseleave',()=>{
-      to=setTimeout(()=>{
+  document.querySelectorAll('.dropdown.keep-open').forEach(dd => {
+    let to = null;
+
+    dd.addEventListener('mouseleave', () => {
+      to = setTimeout(() => {
         const toggle = dd.querySelector('[data-bs-toggle="dropdown"]');
-        bootstrap.Dropdown.getInstance(toggle)?.hide();
+        const inst = toggle ? bootstrap.Dropdown.getInstance(toggle) : null;
+        inst?.hide();
       }, 150);
     });
-    dd.addEventListener('mouseenter',()=>{ if(to){ clearTimeout(to); to=null; }});
+
+    dd.addEventListener('mouseenter', () => {
+      if (to) { clearTimeout(to); to = null; }
+    });
   });
 
-  // Cerrar offcanvas al navegar (móvil)
-  document.querySelectorAll('#mainNav .nav-link, #mainNav .dropdown-item').forEach(a=>{
-    a.addEventListener('click',()=>{
-      const oc = bootstrap.Offcanvas.getInstance(document.getElementById('mainNav'));
-      oc?.hide();
+  // Cerrar offcanvas SOLO cuando realmente navegas (no cuando abres submenú)
+  document.querySelectorAll('#mainNav a.nav-link, #mainNav a.dropdown-item').forEach(a => {
+    a.addEventListener('click', (e) => {
+      // Si es toggle de dropdown (Actividades/Reportes/Settings), NO cerrar
+      if (a.classList.contains('dropdown-toggle')) return;
+      if (a.getAttribute('data-bs-toggle') === 'dropdown') return;
+
+      // Si no navega (href # o vacío), NO cerrar
+      const href = (a.getAttribute('href') || '').trim();
+      if (href === '' || href === '#') return;
+
+      const ocEl = document.getElementById('mainNav');
+      const oc = bootstrap.Offcanvas.getInstance(ocEl) || bootstrap.Offcanvas.getOrCreateInstance(ocEl);
+      oc.hide();
     });
   });
 </script>

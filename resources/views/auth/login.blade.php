@@ -5,37 +5,54 @@
   <link rel="icon" href="{{ asset('none.ico') }}" sizes="any">
   <title>Iniciar sesión — FF</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Fonts + Bootstrap + Icons background: url('{{ asset('img/portada2.jpeg') }}') center/cover no-repeat; -->
+
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+
   <style>
     :root{
-      --granate:#7a0019; --granate-osc:#5c0013; --granate-claro:#92192c;
-      --dorado:#f2c14e; --humo:#f5f5f7; --glass: rgba(255,255,255,.10); --bglass: rgba(255,255,255,.28);
+      /* === CYAN (reemplaza guinda/granate) === */
+      --granate:#00bcd4;       /* cyan principal */
+      --granate-osc:#0097a7;   /* cyan oscuro */
+      --granate-claro:#4dd0e1; /* cyan claro */
+
+      /* se quedan igual */
+      --dorado:#f2c14e;
+      --humo:#f5f5f7;
+      --glass: rgba(255,255,255,.10);
+      --bglass: rgba(255,255,255,.28);
     }
+
     html,body{height:100%; font-family:Montserrat, system-ui, -apple-system, Segoe UI, Roboto}
     .auth-wrap{ position:relative; min-height:100vh; overflow:hidden; }
     .bg-blur, .bg-overlay{ position:absolute; inset:0 }
+
     .bg-blur{
       background: url('{{ asset('img/fondo.png') }}') center/cover no-repeat;
       filter: blur(6px) saturate(1.0);
       transform: scale(1.03);
     }
+
     .bg-overlay{
       background:
         radial-gradient(1200px 600px at 25% 10%,
-          rgba(146,25,44,.25),          /* antes .55 */
-          rgba(122,0,25,.35) 55%,       /* antes .75 */
-          rgba(92,0,25,.55) 100%        /* antes .92 */
+          rgba(77,208,225,.25),
+          rgba(0,188,212,.35) 55%,
+          rgba(0,151,167,.55) 100%
         ),
         linear-gradient(180deg,
-          rgba(0,0,0,.08),              /* antes .15 */
-          rgba(0,0,0,.20)               /* antes .35 */
+          rgba(0,0,0,.08),
+          rgba(0,0,0,.20)
         );
     }
-    .brand{ color:#fff; font-weight:900; letter-spacing:.6px; text-transform:uppercase; text-shadow:0 6px 20px rgba(0,0,0,.35) }
+
+    .brand{
+      color:#fff; font-weight:900; letter-spacing:.6px; text-transform:uppercase;
+      text-shadow:0 6px 20px rgba(0,0,0,.35)
+    }
     .brand .dot{ color:var(--dorado) }
+
     .card-glass{
       background: var(--glass);
       border:1px solid var(--bglass);
@@ -43,18 +60,23 @@
       backdrop-filter: blur(8px);
       box-shadow: 0 25px 70px rgba(0,0,0,.30);
     }
+
     .form-label{ font-weight:700 }
     .form-control{
       border-radius:12px; padding:.8rem .95rem;
       border:1px solid rgba(255,255,255,.45);
       background: rgba(255,255,255,.85);
     }
+
     .btn-granate{ background:var(--granate); color:#fff; border:none; font-weight:800 }
     .btn-granate:hover{ background:var(--granate-osc); color:#fff }
+
     .text-link{ color:#fff; opacity:.9 }
     .text-link:hover{ color:#fff; opacity:1 }
+
     .helper{ color:#fff; opacity:.85 }
     .footer-mini{ color:#fff; opacity:.7; font-size:.85rem }
+
     .alert-soft{
       background: rgba(255,255,255,.85);
       border:1px solid rgba(0,0,0,.08);
@@ -62,6 +84,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="auth-wrap">
     <div class="bg-blur"></div>
@@ -82,7 +105,9 @@
       <div class="row justify-content-center align-items-center" style="min-height:70vh">
         <div class="col-12 col-md-8 col-lg-5">
           <div class="card card-glass p-4 p-md-5 text-dark">
-            <h1 class="h4 fw-800 mb-3"><i class="fa-solid fa-right-to-bracket me-2" style="color:var(--granate)"></i>Iniciar sesión</h1>
+            <h1 class="h4 fw-800 mb-3">
+              <i class="fa-solid fa-right-to-bracket me-2" style="color:var(--granate)"></i>Iniciar sesión
+            </h1>
 
             {{-- Session status --}}
             @if (session('status'))
@@ -137,7 +162,7 @@
               <a href="{{ route('welcome') }}" class="text-link text-decoration-none">
                 <i class="fa-solid fa-chevron-left me-1"></i> Volver al inicio
               </a>
-              {{-- Si no quieres registro público, oculta esto --}}
+
               @if (Route::has('register'))
                 <a href="{{ route('register') }}" class="text-link text-decoration-none">
                   Crear cuenta
