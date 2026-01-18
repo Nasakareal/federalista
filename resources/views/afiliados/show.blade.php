@@ -19,13 +19,11 @@
   $dLoc    = $seccionInfo->distrito_local   ?? $afiliado->distrito_local;
   $dFed    = $seccionInfo->distrito_federal ?? $afiliado->distrito_federal;
 
-  // ✅ INE (si ya vienen guardadas rutas tipo "afiliados/ine/xxx.jpg")
   $ineFrente  = $afiliado->ine_frente  ?? null;
   $ineReverso = $afiliado->ine_reverso ?? null;
 
   $ineUrl = function($path){
     if(!$path) return null;
-    // Si guardas en storage/app/public => asset('storage/...')
     return asset('storage/'.$path);
   };
 
@@ -85,7 +83,7 @@
                 @if($afiliado->sexo) · {{ $afiliado->sexo }} @endif
               </dd>
 
-              <dt class="col-sm-4">Perfil</dt>
+              <dt class="col-sm-4">Afiliado</dt>
               <dd class="col-sm-8">{{ $afiliado->perfil ?: '—' }}</dd>
 
               <dt class="col-sm-4">Observaciones</dt>

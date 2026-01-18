@@ -3,8 +3,7 @@
     "",
     "\\resources",
     "\\resources\\views",
-    "\\resources\\views\\auth"
+    "\\resources\\views\\afiliados"
   ],
-  "SelectedNode": "\\resources\\views\\welcome.blade.php",
   "PreviewInSolutionExplorer": false
 }

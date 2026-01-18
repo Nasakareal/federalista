@@ -1,16 +1,16 @@
 @extends('layouts.app')
 
-@section('title','Referente/Referencia')
+@section('title','Afiliados')
 
 @section('content_header')
-  <h1 class="text-center w-100">Referente/Referencia</h1>
+  <h1 class="text-center w-100">Afiliados</h1>
 @endsection
 
 @section('content')
 <div class="container-xl">
   <div class="card card-outline card-primary">
     <div class="card-header d-flex justify-content-between align-items-center">
-      <h3 class="card-title">Referentes / Referencias registradas</h3>
+      <h3 class="card-title">Afiliados registrados</h3>
       @can('afiliados.crear')
       <div class="btn-group">
         <a href="{{ route('registro') }}" class="btn btn-primary btn-sm">
@@ -54,29 +54,6 @@
         </div>
       </form>
 
-      @php
-        // Clases por estatus (colores)
-        $cls = function($st){
-          $st = strtolower((string)$st);
-          return match($st){
-            'validado'   => 'badge bg-success',
-            'pendiente'  => 'badge bg-warning text-dark',
-            'descartado' => 'badge bg-danger',
-            default      => 'badge bg-secondary'
-          };
-        };
-
-        // Texto mostrado: Sí / No / Pendiente
-        $txt = function($st){
-          $st = strtolower((string)$st);
-          return match($st){
-            'validado'   => 'Sí',
-            'descartado' => 'No',
-            'pendiente'  => 'Pendiente',
-            default      => '—'
-          };
-        };
-      @endphp
 
       <table id="tblAfiliados" class="table table-striped table-bordered table-hover table-sm">
         <thead>
@@ -86,9 +63,8 @@
             <th>Contacto</th>
             <th>Municipio</th>
             <th>Sección</th>
-            <th>Referente/Referencia</th> {{-- NUEVA COLUMNA (mapea a perfil) --}}
+            <th>Coordinador</th>
             <th>Capturista</th>
-            <th>Afiliado</th>
             <th>Creación</th>
             <th class="text-center" style="width:140px">Acciones</th>
           </tr>
@@ -122,11 +98,9 @@
               </div>
             </td>
 
-            {{-- NUEVA CELDA: muestra el campo perfil como "Referente/Referencia" --}}
             <td>{{ $a->perfil ?? '—' }}</td>
 
             <td>{{ $a->capturista_nombre ?? optional($a->capturista)->name }}</td>
-            <td><span class="{{ $cls($a->estatus) }}">{{ $txt($a->estatus) }}</span></td>
             <td>{{ optional($a->created_at)->format('Y-m-d H:i') }}</td>
             <td class="text-center">
               <div class="btn-group">

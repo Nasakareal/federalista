@@ -197,7 +197,7 @@
           </div>
 
           <div class="col-md-12">
-            <label class="form-label {{ $req('perfil') ? 'required' : '' }}">Referente</label>
+            <label class="form-label {{ $req('perfil') ? 'required' : '' }}">Coordinador</label>
             <textarea name="perfil" rows="2"
                       class="form-control @error('perfil') is-invalid @enderror"
                       {{ $req('perfil') ? 'required' : '' }}>{{ old('perfil', $afiliado->perfil) }}</textarea>

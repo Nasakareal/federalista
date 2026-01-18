@@ -123,7 +123,7 @@
           @can('afiliados.ver')
           <li class="nav-item">
             <a class="nav-link {{ is_active(['afiliados.*','registro']) }}" href="{{ route('afiliados.index') }}">
-              <i class="fa-solid fa-user-check me-1"></i> Convencidos
+              <i class="fa-solid fa-user-check me-1"></i> Afiliados
             </a>
           </li>
           @endcan
