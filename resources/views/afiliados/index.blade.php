@@ -1,16 +1,16 @@
 @extends('layouts.app')
 
-@section('title','Afiliados')
+@section('title','Estructura')
 
 @section('content_header')
-  <h1 class="text-center w-100">Afiliados</h1>
+  <h1 class="text-center w-100">Estructura</h1>
 @endsection
 
 @section('content')
 <div class="container-xl">
   <div class="card card-outline card-primary">
     <div class="card-header d-flex justify-content-between align-items-center">
-      <h3 class="card-title">Afiliados registrados</h3>
+      <h3 class="card-title">Estructura registrada</h3>
       @can('afiliados.crear')
       <div class="btn-group">
         <a href="{{ route('registro') }}" class="btn btn-primary btn-sm">

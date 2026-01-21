@@ -11,40 +11,47 @@ class PermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Guard a usar (debe coincidir con tu auth/guards)
         $guard = 'web';
 
-        // Limpia la caché de permisos/roles
+        // Limpia caché
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        // 1) Definir todos los permisos del sistema
+        // ===============================
+        // 1) Permisos del sistema
+        // ===============================
         $perms = [
 
             // Comunicados
             'comunicados.ver', 'comunicados.crear', 'comunicados.editar', 'comunicados.borrar',
 
-            // Afiliados (convencidos)
+            // Afiliados (estructura principal)
             'afiliados.ver', 'afiliados.crear', 'afiliados.editar', 'afiliados.borrar',
 
-            // Secciones (catálogo + lista nominal)
+            // Afiliados General (estructura paralela)
+            'afiliados_general.ver', 'afiliados_general.crear',
+            'afiliados_general.editar', 'afiliados_general.borrar',
+
+            // Secciones
             'secciones.ver', 'secciones.crear', 'secciones.editar', 'secciones.borrar',
 
-            // Actividades (calendario)
+            // Actividades
             'actividades.ver', 'actividades.crear', 'actividades.editar', 'actividades.borrar',
 
             // Mapa y reportes
             'mapa.ver', 'reportes.ver',
 
-            // Settings / administración
+            // Settings
             'settings.ver', 'settings.editar',
 
-            // Gestión de usuarios/roles/permisos
+            // Usuarios / roles / permisos
             'usuarios.ver', 'usuarios.crear', 'usuarios.editar', 'usuarios.borrar',
             'roles.ver', 'roles.crear', 'roles.editar', 'roles.borrar',
             'permisos.ver', 'permisos.crear', 'permisos.editar', 'permisos.borrar',
         ];
 
-        // 2) Crear (si no existen) todos los permisos con el guard correcto
+        // ===============================
+        // 2) Crear permisos si no existen
+        // ===============================
         foreach ($perms as $p) {
             Permission::firstOrCreate([
                 'name'       => $p,
@@ -52,41 +59,59 @@ class PermissionsSeeder extends Seeder
             ]);
         }
 
-        // 3) Crear (o tomar) los roles con el mismo guard
+        // ===============================
+        // 3) Roles
+        // ===============================
         $roleSuper = Role::firstOrCreate(['name' => 'SuperAdmin',  'guard_name' => $guard]);
         $roleAdmin = Role::firstOrCreate(['name' => 'Admin',       'guard_name' => $guard]);
         $roleCoord = Role::firstOrCreate(['name' => 'Coordinador', 'guard_name' => $guard]);
         $roleCapt  = Role::firstOrCreate(['name' => 'Capturista',  'guard_name' => $guard]);
         $roleView  = Role::firstOrCreate(['name' => 'Consulta',    'guard_name' => $guard]);
 
-        // 4) Asignación de permisos por rol
+        // ===============================
+        // 4) Asignación de permisos
+        // ===============================
 
-        // SuperAdmin: siempre todos los permisos existentes en la BD (según guard)
+        // SuperAdmin → TODO
         $roleSuper->syncPermissions(
             Permission::where('guard_name', $guard)->get()
         );
 
-        // Admin: agregar (no quitar) los permisos listados en $perms
+        // Admin → todos los definidos (aditivo)
         $roleAdmin->givePermissionTo($perms);
 
-        // Coordinador: operar afiliados/actividades + ver secciones/mapa/reportes (aditivo)
+        // Coordinador → opera ambas estructuras + reportes
         $roleCoord->givePermissionTo([
+            // Afiliados
             'afiliados.ver','afiliados.crear','afiliados.editar','afiliados.borrar',
+
+            // Afiliados General
+            'afiliados_general.ver','afiliados_general.crear',
+            'afiliados_general.editar','afiliados_general.borrar',
+
+            // Otras
             'actividades.ver','actividades.crear','actividades.editar','actividades.borrar',
             'secciones.ver','mapa.ver','reportes.ver',
         ]);
 
-        // Capturista: crear/ver afiliados + ver mapa (aditivo)
+        // Capturista → captura, no administra
         $roleCapt->givePermissionTo([
-            'afiliados.ver','afiliados.crear','mapa.ver',
+            'afiliados.ver','afiliados.crear',
+            'afiliados_general.ver','afiliados_general.crear',
+            'mapa.ver',
         ]);
 
-        // Consulta: solo lectura general (aditivo)
+        // Consulta → solo lectura
         $roleView->givePermissionTo([
-            'afiliados.ver','secciones.ver','actividades.ver','mapa.ver','reportes.ver',
+            'afiliados.ver',
+            'afiliados_general.ver',
+            'secciones.ver',
+            'actividades.ver',
+            'mapa.ver',
+            'reportes.ver',
         ]);
 
-        // Recalcula/limpia de nuevo la caché
+        // Limpia caché final
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

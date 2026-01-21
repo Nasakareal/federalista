@@ -3,20 +3,12 @@
   "WorkspaceRootPath": "C:\\wamp64\\www\\FuerzaFederalista\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados\\show.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:resources\\views\\afiliados\\show.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados\\index.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:resources\\views\\afiliados\\index.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados\\edit.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:resources\\views\\afiliados\\edit.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados\\create.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:resources\\views\\afiliados\\create.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados_general\\index.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:resources\\views\\afiliados_general\\index.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}"
     }
   ],
   "DocumentGroupContainers": [
@@ -26,58 +18,32 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "show.blade.php",
-              "DocumentMoniker": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados\\show.blade.php",
-              "RelativeDocumentMoniker": "resources\\views\\afiliados\\show.blade.php",
-              "ToolTip": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados\\show.blade.php",
-              "RelativeToolTip": "resources\\views\\afiliados\\show.blade.php",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABkAAAAbAAAAAAAAAA==",
+              "DocumentIndex": 1,
+              "Title": "index.blade.php",
+              "DocumentMoniker": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados_general\\index.blade.php",
+              "RelativeDocumentMoniker": "resources\\views\\afiliados_general\\index.blade.php",
+              "ToolTip": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados_general\\index.blade.php",
+              "RelativeToolTip": "resources\\views\\afiliados_general\\index.blade.php",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002338|",
-              "WhenOpened": "2026-01-18T12:50:34.061Z",
+              "WhenOpened": "2026-01-21T05:35:17.727Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "index.blade.php",
               "DocumentMoniker": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados\\index.blade.php",
               "RelativeDocumentMoniker": "resources\\views\\afiliados\\index.blade.php",
               "ToolTip": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados\\index.blade.php",
               "RelativeToolTip": "resources\\views\\afiliados\\index.blade.php",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAxAAAAAAAAAA==",
+              "ViewState": "AgIAAGoAAAAAAAAAAAAAwJ8AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002338|",
-              "WhenOpened": "2026-01-18T12:50:19.373Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "edit.blade.php",
-              "DocumentMoniker": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados\\edit.blade.php",
-              "RelativeDocumentMoniker": "resources\\views\\afiliados\\edit.blade.php",
-              "ToolTip": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados\\edit.blade.php",
-              "RelativeToolTip": "resources\\views\\afiliados\\edit.blade.php",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAMcAAABYAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002338|",
-              "WhenOpened": "2026-01-18T12:41:15.505Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "create.blade.php",
-              "DocumentMoniker": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados\\create.blade.php",
-              "RelativeDocumentMoniker": "resources\\views\\afiliados\\create.blade.php",
-              "ToolTip": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\afiliados\\create.blade.php",
-              "RelativeToolTip": "resources\\views\\afiliados\\create.blade.php",
-              "ViewState": "AgIAAJ4AAAAAAAAAAAAjwLkAAABYAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002338|",
-              "WhenOpened": "2026-01-18T12:41:06.424Z",
+              "WhenOpened": "2026-01-21T05:34:03.764Z",
               "EditorCaption": ""
             }
           ]

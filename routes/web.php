@@ -15,6 +15,7 @@ use App\Http\Controllers\Settings\AppSettingController;
 use App\Http\Controllers\Settings\ComunicadoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\ForcePasswordController;
+use App\Http\Controllers\AfiliadoGeneralController;
 
 Route::view('/', 'welcome')->name('welcome');
 
@@ -40,6 +41,14 @@ Route::middleware(['auth','force.password.change'])->group(function () {
     Route::delete('/afiliados/{afiliado}', [AfiliadoController::class,'destroy'])->name('afiliados.destroy')->middleware('permission:afiliados.borrar');
 
     Route::get('/registro', [AfiliadoController::class,'create'])->name('registro')->middleware('permission:afiliados.crear');
+
+    Route::get('/afiliados-general', [AfiliadoGeneralController::class,'index'])->name('afiliados-general.index')->middleware('permission:afiliados_general.ver');
+    Route::get('/afiliados-general/create', [AfiliadoGeneralController::class,'create'])->name('afiliados-general.create')->middleware('permission:afiliados_general.crear');
+    Route::post('/afiliados-general', [AfiliadoGeneralController::class,'store'])->name('afiliados-general.store')->middleware('permission:afiliados_general.crear');
+    Route::get('/afiliados-general/{afiliadoGeneral}', [AfiliadoGeneralController::class,'show'])->name('afiliados-general.show')->middleware('permission:afiliados_general.ver');
+    Route::get('/afiliados-general/{afiliadoGeneral}/edit', [AfiliadoGeneralController::class,'edit'])->name('afiliados-general.edit')->middleware('permission:afiliados_general.editar');
+    Route::put('/afiliados-general/{afiliadoGeneral}', [AfiliadoGeneralController::class,'update'])->name('afiliados-general.update')->middleware('permission:afiliados_general.editar');
+    Route::delete('/afiliados-general/{afiliadoGeneral}', [AfiliadoGeneralController::class,'destroy'])->name('afiliados-general.destroy')->middleware('permission:afiliados_general.borrar');
 
     Route::get('/secciones', [SeccionController::class,'index'])->name('secciones.index')->middleware('permission:secciones.ver');
     Route::get('/secciones/create', [SeccionController::class,'create'])->name('secciones.create')->middleware('permission:secciones.crear');

@@ -123,10 +123,20 @@
           @can('afiliados.ver')
           <li class="nav-item">
             <a class="nav-link {{ is_active(['afiliados.*','registro']) }}" href="{{ route('afiliados.index') }}">
-              <i class="fa-solid fa-user-check me-1"></i> Afiliados
+              <i class="fa-solid fa-user-check me-1"></i> Estructura
             </a>
           </li>
           @endcan
+
+          @can('afiliados_general.ver')
+            <li class="nav-item">
+              <a class="nav-link {{ is_active(['afiliados-general.*']) }}"
+                 href="{{ route('afiliados-general.index') }}">
+                <i class="fa-solid fa-users me-1"></i> Afiliados
+              </a>
+            </li>
+            @endcan
+
 
           @can('secciones.ver')
           <li class="nav-item">
