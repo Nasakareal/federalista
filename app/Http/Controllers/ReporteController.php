@@ -346,32 +346,15 @@ class ReporteController extends Controller
 
     public function ineExportPdf(Request $request)
     {
+        @ini_set('memory_limit', '512M');
+        @set_time_limit(120);
+
         $page = max(1, (int)$request->input('page', 1));
-        $per  = min(120, max(10, (int)$request->input('per', 60))); // puedes subirlo porque ahora caben 3 por hoja
+
+        $per  = min(18, max(3, (int)$request->input('per', 12)));
         $off  = ($page - 1) * $per;
 
         $q = $this->buildAfiliadosBaseQuery($request);
-
-        // ====== NUEVO: filtros de exportación por perfil / IDs ======
-        $perfilMode = $request->input('perfil_mode', 'all'); // all | only | exclude
-        $perfiles   = $this->normalizeList($request->input('perfiles'));
-        $ids        = $this->normalizeList($request->input('afiliado_ids'));
-
-        if (!empty($ids)) {
-            if ($perfilMode === 'exclude') {
-                $q->whereNotIn('afiliados.id', $ids);
-            } else {
-                $q->whereIn('afiliados.id', $ids);
-            }
-        }
-
-        if (!empty($perfiles)) {
-            if ($perfilMode === 'exclude') {
-                $q->whereNotIn('afiliados.perfil', $perfiles);
-            } else {
-                $q->whereIn('afiliados.perfil', $perfiles);
-            }
-        }
 
         $rows = $q
             ->where(function($w){
@@ -384,13 +367,13 @@ class ReporteController extends Controller
             ->get([
                 'afiliados.id',
                 'afiliados.perfil',
-                'afiliados.seccion',
                 'afiliados.nombre',
                 'afiliados.apellido_paterno',
                 'afiliados.apellido_materno',
                 'afiliados.clave_elector',
                 'afiliados.telefono',
                 'afiliados.email',
+                'afiliados.seccion',
                 'afiliados.ine_frente',
                 'afiliados.ine_reverso',
                 'afiliados.created_at',
@@ -399,6 +382,7 @@ class ReporteController extends Controller
                 $r->nombre_completo = trim(implode(' ', array_filter([$r->nombre, $r->apellido_paterno, $r->apellido_materno])));
                 $r->ine_frente_path  = $r->ine_frente ? public_path('storage/' . $r->ine_frente) : null;
                 $r->ine_reverso_path = $r->ine_reverso ? public_path('storage/' . $r->ine_reverso) : null;
+
                 return $r;
             });
 
@@ -408,12 +392,16 @@ class ReporteController extends Controller
             'rows'    => $rows,
             'filters' => $request->all(),
             'fecha'   => now()->format('d/m/Y H:i'),
-            'perPage' => 3, // ✅ ahora 3 por hoja
-        ])->setPaper('letter', 'portrait');
+        ])
+        ->setPaper('letter', 'portrait')
+        ->setOptions([
+            'isRemoteEnabled' => true,
+            'isHtml5ParserEnabled' => true,
+            'dpi' => 96,
+        ]);
 
         return $pdf->download($filename);
     }
-
 
     public function facets(Request $request)
     {

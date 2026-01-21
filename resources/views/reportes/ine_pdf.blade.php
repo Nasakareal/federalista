@@ -5,8 +5,8 @@
   <title>Reporte INE</title>
   <style>
     body { font-family: DejaVu Sans, sans-serif; font-size: 11px; }
-    .title { text-align:center; font-size:16px; font-weight:bold; margin: 0 0 8px 0; }
-    .meta { font-size:10px; margin-bottom:10px; color:#333; }
+    .title { text-align:center; font-size:16px; font-weight:bold; margin: 0 0 6px 0; }
+    .meta { font-size:10px; margin-bottom:8px; color:#333; }
 
     table { width:100%; border-collapse: collapse; }
     .card { width:100%; border-collapse: collapse; }
@@ -16,9 +16,10 @@
     .lbl { font-size:9px; color:#555; margin-bottom:2px; }
     .val { font-size:11px; font-weight:600; }
     .val.normal { font-weight:400; }
-    .block { margin-bottom:8px; }
-    .imgwrap { margin-top:6px; text-align:center; }
-    .img { max-width:260px; max-height:170px; width:auto; height:auto; }
+    .block { margin-bottom:6px; }
+
+    .imgwrap { margin-top:4px; text-align:center; }
+    .img { max-width:250px; max-height:150px; width:auto; height:auto; }
     .small { font-size:10px; color:#666; }
 
     .pagebreak { page-break-after: always; }
@@ -27,20 +28,18 @@
 <body>
 
 @php
-  // 3 tarjetas por hoja
   $perPage = 3;
 
-  // DomPDF: imágenes en base64 para que SIEMPRE salgan
+  // ✅ DomPDF estable: base64 (pero ojo con memoria; por eso limitamos $per en el controller)
   $imgData = function($path){
     if(!$path || !is_file($path)) return null;
-
     $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-    $mime = match($ext){
-      'jpg','jpeg' => 'image/jpeg',
-      'png'        => 'image/png',
-      'webp'       => 'image/webp',
-      default      => null,
-    };
+
+    $mime = null;
+    if ($ext === 'jpg' || $ext === 'jpeg') $mime = 'image/jpeg';
+    elseif ($ext === 'png') $mime = 'image/png';
+    elseif ($ext === 'webp') $mime = 'image/webp';
+
     if(!$mime) return null;
 
     $bin = @file_get_contents($path);
@@ -48,95 +47,101 @@
 
     return 'data:'.$mime.';base64,'.base64_encode($bin);
   };
+
+  $rowsCount = is_countable($rows) ? count($rows) : (method_exists($rows,'count') ? $rows->count() : 0);
 @endphp
 
 <div class="title">REPORTE INE</div>
 <div class="meta">
   Generado: {{ $fecha }}<br>
-  Filtros: {{ json_encode($filters, JSON_UNESCAPED_UNICODE) }}
+  Filtros: {{ json_encode($filters ?? [], JSON_UNESCAPED_UNICODE) }}
 </div>
 
 <table class="card">
   <tbody>
-    @foreach($rows as $i => $r)
-      @php
-        $cargo   = trim((string)($r->perfil ?? ''));
-        $nombre  = trim((string)($r->nombre_completo ?? ''));
-        $seccion = trim((string)($r->seccion ?? ''));
+  @foreach($rows as $i => $r)
+    @php
+      $cargo   = $r->perfil ?? '';
+      $nombre  = $r->nombre_completo ?? '';
+      $seccion = $r->seccion ?? '';
 
-        $front = $imgData($r->ine_frente_path ?? null);
-        $back  = $imgData($r->ine_reverso_path ?? null);
-      @endphp
+      $front = $imgData($r->ine_frente_path ?? null);
+      $back  = $imgData($r->ine_reverso_path ?? null);
+    @endphp
 
-      <tr>
-        {{-- COLUMNA IZQUIERDA --}}
-        <td class="col">
-          <div class="block">
-            <div class="lbl">Cargo</div>
-            <div class="val normal">{{ $cargo }}</div>
-          </div>
+    <tr>
+      <td class="col">
+        {{-- ✅ Si es Coordinador/Enlace/Apoyo (cargo) arriba del nombre --}}
+        <div class="block">
+          <div class="lbl">Cargo</div>
+          <div class="val normal">{{ $cargo ?: '—' }}</div>
+        </div>
 
-          <div class="block">
-            <div class="lbl">Nombre</div>
-            <div class="val normal">{{ $nombre }}</div>
-          </div>
+        <div class="block">
+          <div class="lbl">Nombre</div>
+          <div class="val normal">{{ $nombre ?: '—' }}</div>
+        </div>
 
-          <div class="block">
-            <div class="lbl">Teléfono</div>
-            <div class="val normal">{{ $r->telefono ?? '' }}</div>
-          </div>
+        <div class="block">
+          <div class="lbl">Teléfono</div>
+          <div class="val normal">{{ $r->telefono ?? '—' }}</div>
+        </div>
 
-          
+        
 
-          <div class="block">
-            <div class="imgwrap">
-              @if($front)
-                <img class="img" src="{{ $front }}">
-              @else
-                <span class="small">Sin INE frente</span>
-              @endif
-            </div>
-          </div>
-        </td>
+        <div class="imgwrap">
+          @if($front)
+            <img class="img" src="{{ $front }}">
+          @else
+            <span class="small">Sin INE frente</span>
+          @endif
+        </div>
+      </td>
 
-        {{-- COLUMNA DERECHA --}}
-        <td class="col">
-          <div class="block">
-            <div class="lbl">Clave de elector</div>
-            <div class="val normal">{{ $r->clave_elector ?? '' }}</div>
-          </div>
+      <td class="col">
+        <div class="block">
+          <div class="lbl">Clave de elector</div>
+          <div class="val normal">{{ $r->clave_elector ?? '—' }}</div>
+        </div>
 
-          <div class="block">
-            <div class="lbl">Email</div>
-            <div class="val normal">{{ $r->email ?? '' }}</div>
-          </div>
+        <div class="block">
+          <div class="lbl">Email</div>
+          <div class="val normal">{{ $r->email ?? '—' }}</div>
+        </div>
 
-          <div class="block">
-            <div class="lbl">Sección</div>
-            <div class="val normal">{{ $seccion }}</div>
-          </div>
+        {{-- ✅ Reemplazo: "INE (Frente)" -> "Sección" (solo texto, la imagen se queda) --}}
+        <div class="block">
+          <div class="lbl">Sección</div>
+          <div class="val normal">{{ $seccion ?: '—' }}</div>
+        </div>
 
-          <div class="block">
-            <div class="imgwrap">
-              @if($back)
-                <img class="img" src="{{ $back }}">
-              @else
-                <span class="small">Sin INE reverso</span>
-              @endif
-            </div>
-          </div>
-        </td>
-      </tr>
+        <div class="imgwrap">
+          @if($back)
+            <img class="img" src="{{ $back }}">
+          @else
+            <span class="small">Sin INE reverso</span>
+          @endif
+        </div>
+      </td>
+    </tr>
 
-      {{-- pagebreak cada 3 registros --}}
-      @if(($i + 1) % $perPage === 0 && ($i + 1) < count($rows))
-        </tbody>
-      </table>
-      <div class="pagebreak"></div>
-      <table class="card">
-        <tbody>
-      @endif
-    @endforeach
+    {{-- ✅ pagebreak cada 3 registros --}}
+    @if( (($i + 1) % $perPage) === 0 && ($i + 1) < $rowsCount )
+      </tbody>
+    </table>
+    <div class="pagebreak"></div>
+
+    {{-- ✅ repite header por página (opcional, pero se ve pro) --}}
+    <div class="title">REPORTE INE</div>
+    <div class="meta">
+      Generado: {{ $fecha }}<br>
+      Filtros: {{ json_encode($filters ?? [], JSON_UNESCAPED_UNICODE) }}
+    </div>
+
+    <table class="card">
+      <tbody>
+    @endif
+  @endforeach
   </tbody>
 </table>
 
