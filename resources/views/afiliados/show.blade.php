@@ -8,12 +8,19 @@
 
 @section('content')
 @php
+  $fullNameField = Schema::hasColumn('afiliados', 'nombre_completo') ? 'nombre_completo' : 'nombre';
+
+  $nombreMostrado = $fullNameField === 'nombre_completo'
+    ? ($afiliado->nombre_completo ?? '—')
+    : trim(collect([$afiliado->nombre, $afiliado->apellido_paterno, $afiliado->apellido_materno])->filter()->implode(' '));
+
   $badge = match($afiliado->estatus){
     'validado'   => 'badge bg-success',
     'pendiente'  => 'badge bg-warning text-dark',
     'descartado' => 'badge bg-danger',
     default      => 'badge bg-secondary'
   };
+
   $mun     = $seccionInfo->municipio   ?? $afiliado->municipio;
   $cveMun  = $seccionInfo->cve_mun     ?? $afiliado->cve_mun;
   $dLoc    = $seccionInfo->distrito_local   ?? $afiliado->distrito_local;
@@ -32,6 +39,14 @@
     $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
     return in_array($ext, ['jpg','jpeg','png','webp','gif']);
   };
+
+  $perfil = $afiliado->perfil ?? null;
+  $perfilBadge = match($perfil){
+    'Coordinador' => 'badge bg-primary',
+    'Enlace'      => 'badge bg-info text-dark',
+    'Apoyo'       => 'badge bg-secondary',
+    default       => 'badge bg-light text-dark'
+  };
 @endphp
 
 <div class="container-xl">
@@ -39,27 +54,36 @@
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
       <div>
         <h3 class="card-title m-0">
-          <strong>{{ $afiliado->nombre }} {{ $afiliado->apellido_paterno }} {{ $afiliado->apellido_materno }}</strong>
+          <strong>{{ $nombreMostrado }}</strong>
         </h3>
         <div class="small text-muted">
           ID: {{ $afiliado->id }} · Capturista: {{ $afiliado->capturista->name ?? '—' }}
         </div>
       </div>
+
       <div class="d-flex align-items-center gap-2">
         <span class="{{ $badge }}">{{ ucfirst($afiliado->estatus) }}</span>
+
+        @if(!empty($perfil))
+          <span class="{{ $perfilBadge }}">{{ $perfil }}</span>
+        @endif
+
         @can('afiliados.editar')
           <a href="{{ route('afiliados.edit',$afiliado->id) }}" class="btn btn-success btn-sm">
             <i class="fa fa-pen"></i> Editar
           </a>
         @endcan
+
         @can('afiliados.borrar')
           <form action="{{ route('afiliados.destroy',$afiliado->id) }}" method="POST" id="formDel-{{ $afiliado->id }}">
-            @csrf @method('DELETE')
+            @csrf
+            @method('DELETE')
             <button type="button" class="btn btn-danger btn-sm" onclick="confirmarEliminar('{{ $afiliado->id }}', this)">
               <i class="fa fa-trash"></i> Eliminar
             </button>
           </form>
         @endcan
+
         <a href="{{ route('afiliados.index') }}" class="btn btn-outline-secondary btn-sm">
           <i class="fa fa-arrow-left"></i> Volver
         </a>
@@ -69,13 +93,12 @@
     <div class="card-body">
       <div class="row g-4">
 
-        {{-- Columna 1: datos personales y contacto --}}
         <div class="col-lg-6">
           <div class="mb-3">
             <h5 class="mb-2">Datos personales</h5>
             <dl class="row mb-0">
               <dt class="col-sm-4">Nombre</dt>
-              <dd class="col-sm-8">{{ $afiliado->nombre }} {{ $afiliado->apellido_paterno }} {{ $afiliado->apellido_materno }}</dd>
+              <dd class="col-sm-8">{{ $nombreMostrado ?: '—' }}</dd>
 
               <dt class="col-sm-4">Edad / Sexo</dt>
               <dd class="col-sm-8">
@@ -83,11 +106,14 @@
                 @if($afiliado->sexo) · {{ $afiliado->sexo }} @endif
               </dd>
 
-              <dt class="col-sm-4">Afiliado</dt>
+              <dt class="col-sm-4">Perfil</dt>
               <dd class="col-sm-8">{{ $afiliado->perfil ?: '—' }}</dd>
 
               <dt class="col-sm-4">Observaciones</dt>
               <dd class="col-sm-8">{{ $afiliado->observaciones ?: '—' }}</dd>
+
+              <dt class="col-sm-4">Clave de elector</dt>
+              <dd class="col-sm-8">{{ $afiliado->clave_elector ?: '—' }}</dd>
             </dl>
           </div>
 
@@ -103,7 +129,6 @@
           </div>
         </div>
 
-        {{-- Columna 2: ubicación y estructura --}}
         <div class="col-lg-6">
           <div class="mb-3">
             <h5 class="mb-2">Ubicación</h5>
@@ -135,9 +160,9 @@
               <dd class="col-sm-8">
                 @if($afiliado->lat && $afiliado->lng)
                   {{ $afiliado->lat }}, {{ $afiliado->lng }}
-                  <a class="small ms-1" target="_blank"
+                  <a class="small ms-1" target="_blank" rel="noopener"
                      href="https://maps.google.com/?q={{ $afiliado->lat }},{{ $afiliado->lng }}">
-                     (ver mapa)
+                    (ver mapa)
                   </a>
                 @else
                   —
@@ -166,7 +191,6 @@
           </div>
         </div>
 
-        {{-- ✅ NUEVO BLOQUE: INE (frente / reverso) --}}
         <div class="col-12">
           <hr class="my-2">
           <h5 class="mb-3">INE</h5>
@@ -243,11 +267,10 @@
         </div>
         <div class="col-md-4">
           <div class="small text-muted">Fecha de convencimiento</div>
-          <div>
-            {{ optional($afiliado->fecha_convencimiento)->format('Y-m-d H:i') ?? '—' }}
-          </div>
+          <div>{{ $afiliado->fecha_convencimiento ? optional($afiliado->fecha_convencimiento)->format('Y-m-d H:i') : '—' }}</div>
         </div>
       </div>
+
     </div>
   </div>
 </div>
@@ -259,15 +282,25 @@
 function confirmarEliminar(id, btn){
   const form = document.getElementById('formDel-'+id);
   btn.disabled = true;
+
   if(typeof Swal === 'undefined'){
-    if(confirm('¿Eliminar afiliado?')) form.submit(); else btn.disabled=false;
+    if(confirm('¿Eliminar afiliado?')) form.submit();
+    else btn.disabled=false;
     return;
   }
+
   Swal.fire({
-    title:'Eliminar afiliado', text:'¿Deseas eliminarlo?', icon:'warning',
-    showDenyButton:true, confirmButtonText:'Eliminar', denyButtonText:'Cancelar',
+    title:'Eliminar afiliado',
+    text:'¿Deseas eliminarlo?',
+    icon:'warning',
+    showDenyButton:true,
+    confirmButtonText:'Eliminar',
+    denyButtonText:'Cancelar',
     confirmButtonColor:'#e3342f'
-  }).then(r=>{ if(r.isConfirmed) form.submit(); else btn.disabled=false; });
+  }).then(r=>{
+    if(r.isConfirmed) form.submit();
+    else btn.disabled=false;
+  });
 }
 </script>
 @endsection

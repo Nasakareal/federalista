@@ -283,18 +283,45 @@ class ReporteController extends Controller
         return $this->exportTabular($filename, $headers, $rows);
     }
 
-    public function ine()
+    public function ine(Request $request)
     {
-        return view('reportes.ine');
+        // Opciones que quieres manejar en el prompt
+        $perfiles = ['Coordinador', 'Enlace', 'Apoyo'];
+
+        return view('reportes.ine', compact('perfiles'));
     }
 
     public function ineData(Request $request)
     {
         $q = $this->buildAfiliadosBaseQuery($request);
 
+        // ====== NUEVO: filtros de exportación por perfil / IDs ======
+        $perfilMode = $request->input('perfil_mode', 'all'); // all | only | exclude
+        $perfiles   = $this->normalizeList($request->input('perfiles')); // lista de perfiles
+        $ids        = $this->normalizeList($request->input('afiliado_ids')); // ids específicos
+
+        // IDs: si vienen, se aplican como base (uno solo / varios / excluir uno, etc.)
+        if (!empty($ids)) {
+            if ($perfilMode === 'exclude') {
+                $q->whereNotIn('afiliados.id', $ids);
+            } else {
+                $q->whereIn('afiliados.id', $ids);
+            }
+        }
+
+        // Perfiles: aplicar solo si vienen
+        if (!empty($perfiles)) {
+            if ($perfilMode === 'exclude') {
+                $q->whereNotIn('afiliados.perfil', $perfiles);
+            } else {
+                $q->whereIn('afiliados.perfil', $perfiles);
+            }
+        }
+
         $rows = $q->select([
                 'afiliados.id',
                 'afiliados.perfil',
+                'afiliados.seccion',
                 'afiliados.nombre',
                 'afiliados.apellido_paterno',
                 'afiliados.apellido_materno',
@@ -320,10 +347,31 @@ class ReporteController extends Controller
     public function ineExportPdf(Request $request)
     {
         $page = max(1, (int)$request->input('page', 1));
-        $per  = min(80, max(10, (int)$request->input('per', 40)));
+        $per  = min(120, max(10, (int)$request->input('per', 60))); // puedes subirlo porque ahora caben 3 por hoja
         $off  = ($page - 1) * $per;
 
         $q = $this->buildAfiliadosBaseQuery($request);
+
+        // ====== NUEVO: filtros de exportación por perfil / IDs ======
+        $perfilMode = $request->input('perfil_mode', 'all'); // all | only | exclude
+        $perfiles   = $this->normalizeList($request->input('perfiles'));
+        $ids        = $this->normalizeList($request->input('afiliado_ids'));
+
+        if (!empty($ids)) {
+            if ($perfilMode === 'exclude') {
+                $q->whereNotIn('afiliados.id', $ids);
+            } else {
+                $q->whereIn('afiliados.id', $ids);
+            }
+        }
+
+        if (!empty($perfiles)) {
+            if ($perfilMode === 'exclude') {
+                $q->whereNotIn('afiliados.perfil', $perfiles);
+            } else {
+                $q->whereIn('afiliados.perfil', $perfiles);
+            }
+        }
 
         $rows = $q
             ->where(function($w){
@@ -336,6 +384,7 @@ class ReporteController extends Controller
             ->get([
                 'afiliados.id',
                 'afiliados.perfil',
+                'afiliados.seccion',
                 'afiliados.nombre',
                 'afiliados.apellido_paterno',
                 'afiliados.apellido_materno',
@@ -359,10 +408,12 @@ class ReporteController extends Controller
             'rows'    => $rows,
             'filters' => $request->all(),
             'fecha'   => now()->format('d/m/Y H:i'),
+            'perPage' => 3, // ✅ ahora 3 por hoja
         ])->setPaper('letter', 'portrait');
 
         return $pdf->download($filename);
     }
+
 
     public function facets(Request $request)
     {

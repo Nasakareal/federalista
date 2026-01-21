@@ -15,9 +15,15 @@
         label.required::after { content:" *"; color:#dc3545; margin-left:.25rem; }
         .form-control[readonly] { background-color:#f8f9fa; }
       </style>
+
       @php
         $req = fn($f) => !empty($required[$f] ?? false);
         $fullNameField = $fullNameField ?? 'nombre';
+
+        $perfilOld = old('perfil', $afiliado->perfil ?? '');
+        $perfilOpts = ['Coordinador' => 'Coordinador', 'Enlace' => 'Enlace', 'Apoyo' => 'Apoyo'];
+
+        $munOld = old('municipio', $afiliado->municipio);
       @endphp
 
       <form action="{{ route('afiliados.update', $afiliado->id) }}" method="POST" autocomplete="off" enctype="multipart/form-data">
@@ -78,7 +84,6 @@
 
           <div class="col-md-4">
             <label class="form-label {{ $req('municipio') ? 'required' : '' }}">Municipio</label>
-            @php $munOld = old('municipio', $afiliado->municipio); @endphp
             <select name="municipio" id="slMunicipio"
                     class="form-select @error('municipio') is-invalid @enderror"
                     {{ $req('municipio') ? 'required' : '' }}>
@@ -196,19 +201,27 @@
             @endif
           </div>
 
-          <div class="col-md-12">
-            <label class="form-label {{ $req('perfil') ? 'required' : '' }}">Coordinador</label>
-            <textarea name="perfil" rows="2"
-                      class="form-control @error('perfil') is-invalid @enderror"
-                      {{ $req('perfil') ? 'required' : '' }}>{{ old('perfil', $afiliado->perfil) }}</textarea>
+          <div class="col-md-6">
+            <label class="form-label {{ $req('perfil') ? 'required' : '' }}">Perfil</label>
+            <select name="perfil"
+                    class="form-select @error('perfil') is-invalid @enderror"
+                    {{ $req('perfil') ? 'required' : '' }}>
+              <option value="" {{ $perfilOld==='' ? 'selected' : '' }}>-- Selecciona --</option>
+              @foreach($perfilOpts as $val => $label)
+                <option value="{{ $val }}" {{ $perfilOld===$val ? 'selected' : '' }}>{{ $label }}</option>
+              @endforeach
+            </select>
             @error('perfil')<div class="invalid-feedback">{{ $message }}</div>@enderror
           </div>
 
-          <div class="col-md-12">
-            <label class="form-label {{ $req('observaciones') ? 'required' : '' }}">Observaciones</label>
-            <textarea name="observaciones" rows="2"
-                      class="form-control @error('observaciones') is-invalid @enderror"
-                      {{ $req('observaciones') ? 'required' : '' }}>{{ old('observaciones', $afiliado->observaciones) }}</textarea>
+          <div class="col-md-6">
+            <label class="form-label {{ $req('observaciones') ? 'required' : '' }}">Observaciones (localidad/municipio, etc.)</label>
+            <input type="text"
+                   name="observaciones"
+                   value="{{ old('observaciones', $afiliado->observaciones) }}"
+                   class="form-control @error('observaciones') is-invalid @enderror"
+                   {{ $req('observaciones') ? 'required' : '' }}
+                   placeholder="Ej. Angangueo - Enlace">
             @error('observaciones')<div class="invalid-feedback">{{ $message }}</div>@enderror
           </div>
 
@@ -279,6 +292,7 @@ document.addEventListener('DOMContentLoaded', function(){
     const cve = (opt && opt.dataset && opt.dataset.cve) ? String(opt.dataset.cve).padStart(3,'0') : '';
     $cve.value = cve;
   }
+
   if ($mun) {
     $mun.addEventListener('change', () => { syncCveFromMunicipio(); if ($sec.value) debouncedLookup(); });
     syncCveFromMunicipio();
@@ -346,85 +360,3 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 @endpush
-
-
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  const $sec = document.querySelector('input[name="seccion"], select[name="seccion"]');
-  if (!$sec) return;
-
-  const $cve = document.querySelector('input[name="cve_mun"]');
-  const $mun = document.querySelector('input[name="municipio"], select[name="municipio"]');
-  const $dl  = document.querySelector('input[name="distrito_local"], select[name="distrito_local"]');
-  const $df  = document.querySelector('input[name="distrito_federal"], select[name="distrito_federal"]');
-
-  const endpoint = "{{ route('secciones.lookup') }}";
-  const pad3   = v => (v==null ? '' : String(v).trim().padStart(3,'0'));
-  const squish = v => String(v||'').trim().replace(/\s+/g,' ');
-
-  let t=null;
-
-  async function fetchLookup(params){
-    const url = endpoint + '?' + (new URLSearchParams(params)).toString();
-    const r = await fetch(url, { headers: { 'X-Requested-With':'XMLHttpRequest', 'Accept':'application/json' } });
-    if (!r.ok) throw r;
-    return r.json();
-  }
-
-  function fillFields(j, forceCanon){
-    if ($dl) $dl.value = j.distrito_local ?? '';
-    if ($df) $df.value = j.distrito_federal ?? '';
-    if ($cve && (forceCanon || !squish($cve.value)) && j.cve_mun) $cve.value = j.cve_mun;
-    if ($mun && (forceCanon || !squish($mun.value)) && j.municipio) $mun.value = j.municipio;
-
-    [$dl,$df,$cve,$mun].forEach(el=>{
-      if(!el) return;
-      el.classList.remove('is-invalid');
-      el.classList.add('is-valid');
-      setTimeout(()=>el.classList.remove('is-valid'), 600);
-    });
-  }
-
-  async function lookup(){
-    const seccion = squish($sec.value);
-    if (!seccion) return;
-
-    const strict = { seccion };
-    if ($cve && squish($cve.value)) strict.cve_mun = pad3($cve.value);
-    else if ($mun && squish($mun.value)) strict.municipio = squish($mun.value);
-
-    try {
-      const j = await fetchLookup(strict);
-      fillFields(j, false);
-      return;
-    } catch(e){}
-
-    try {
-      const j = await fetchLookup({ seccion });
-      fillFields(j, true);
-    } catch(e){
-      if ($dl) $dl.value = '';
-      if ($df) $df.value = '';
-      [$dl,$df,$cve,$mun].forEach(el=>{
-        if(!el) return;
-        el.classList.remove('is-valid');
-        el.classList.add('is-invalid');
-        setTimeout(()=>el.classList.remove('is-invalid'), 800);
-      });
-    }
-  }
-
-  function debounced(){ if (t) clearTimeout(t); t = setTimeout(lookup, 200); }
-
-  $sec.addEventListener('input', debounced);
-  ['change','blur'].forEach(ev => $sec.addEventListener(ev, lookup));
-
-  [$cve,$mun].forEach(el=>{
-    if(!el) return;
-    el.addEventListener('input', debounced);
-    ['change','blur'].forEach(ev => el.addEventListener(ev, lookup));
-  });
-
-  if (squish($sec.value)) lookup();
-});
-</script>

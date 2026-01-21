@@ -15,9 +15,12 @@
         label.required::after { content:" *"; color:#dc3545; margin-left:.25rem; }
         .form-control[readonly] { background-color:#f8f9fa; }
       </style>
+
       @php
         $req = fn($f) => !empty($required[$f] ?? false);
         $fullNameField = $fullNameField ?? 'nombre';
+        $perfilOld = old('perfil', '');
+        $perfilOpts = ['Coordinador' => 'Coordinador', 'Enlace' => 'Enlace', 'Apoyo' => 'Apoyo'];
       @endphp
 
       <form action="{{ route('afiliados.store') }}" method="POST" autocomplete="off" enctype="multipart/form-data">
@@ -182,19 +185,27 @@
             @error('ine_reverso')<div class="invalid-feedback">{{ $message }}</div>@enderror
           </div>
 
-          <div class="col-md-12">
-            <label class="form-label {{ $req('perfil') ? 'required' : '' }}">Coordinador</label>
-            <textarea name="perfil" rows="2"
-                      class="form-control @error('perfil') is-invalid @enderror"
-                      {{ $req('perfil') ? 'required' : '' }}>{{ old('perfil') }}</textarea>
+          <div class="col-md-6">
+            <label class="form-label {{ $req('perfil') ? 'required' : '' }}">Perfil</label>
+            <select name="perfil"
+                    class="form-select @error('perfil') is-invalid @enderror"
+                    {{ $req('perfil') ? 'required' : '' }}>
+              <option value="" {{ $perfilOld==='' ? 'selected' : '' }}>-- Selecciona --</option>
+              @foreach($perfilOpts as $val => $label)
+                <option value="{{ $val }}" {{ $perfilOld===$val ? 'selected' : '' }}>{{ $label }}</option>
+              @endforeach
+            </select>
             @error('perfil')<div class="invalid-feedback">{{ $message }}</div>@enderror
           </div>
 
-          <div class="col-md-12">
-            <label class="form-label {{ $req('observaciones') ? 'required' : '' }}">Observaciones</label>
-            <textarea name="observaciones" rows="2"
-                      class="form-control @error('observaciones') is-invalid @enderror"
-                      {{ $req('observaciones') ? 'required' : '' }}>{{ old('observaciones') }}</textarea>
+          <div class="col-md-6">
+            <label class="form-label {{ $req('observaciones') ? 'required' : '' }}">Observaciones (localidad/municipio, etc.)</label>
+            <input type="text"
+                   name="observaciones"
+                   value="{{ old('observaciones') }}"
+                   class="form-control @error('observaciones') is-invalid @enderror"
+                   {{ $req('observaciones') ? 'required' : '' }}
+                   placeholder="Ej. Angangueo - Enlace">
             @error('observaciones')<div class="invalid-feedback">{{ $message }}</div>@enderror
           </div>
 

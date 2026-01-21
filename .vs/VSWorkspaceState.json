@@ -4,12 +4,12 @@
     "\\app",
     "\\app\\Http",
     "\\app\\Http\\Controllers",
+    "\\app\\Http\\Controllers\\Settings",
     "\\resources",
     "\\resources\\views",
-    "\\resources\\views\\afiliados",
-    "\\resources\\views\\afiliados_general",
-    "\\resources\\views\\layouts"
+    "\\resources\\views\\reportes",
+    "\\resources\\views\\settings"
   ],
-  "SelectedNode": "\\resources\\views\\afiliados_general\\show.blade.php",
+  "SelectedNode": "\\resources\\views\\reportes\\ine_pdf.blade.php",
   "PreviewInSolutionExplorer": false
 }

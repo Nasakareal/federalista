@@ -21,6 +21,7 @@ class AfiliadoController extends Controller
         $municipio = $request->query('municipio');
         $estatus   = $request->query('estatus');
         $capId     = $request->query('capturista_id');
+        $perfil    = $request->query('perfil');
 
         $full = $this->fullNameField();
         $hasCveMun = Schema::hasColumn('afiliados', 'cve_mun');
@@ -47,7 +48,9 @@ class AfiliadoController extends Controller
                     }
                     $w->orWhere('afiliados.telefono', 'like', "%{$q}%")
                       ->orWhere('afiliados.email', 'like', "%{$q}%")
-                      ->orWhere('afiliados.clave_elector', 'like', "%{$q}%");
+                      ->orWhere('afiliados.clave_elector', 'like', "%{$q}%")
+                      ->orWhere('afiliados.perfil', 'like', "%{$q}%")
+                      ->orWhere('afiliados.observaciones', 'like', "%{$q}%");
                 });
             })
             ->when($seccion, fn($qb) => $qb->where('afiliados.seccion', $seccion))
@@ -55,6 +58,7 @@ class AfiliadoController extends Controller
             ->when($municipio, fn($qb) => $qb->where('afiliados.municipio', $municipio))
             ->when($estatus, fn($qb) => $qb->where('afiliados.estatus', $estatus))
             ->when($capId, fn($qb) => $qb->where('afiliados.capturista_id', $capId))
+            ->when($perfil, fn($qb) => $qb->where('afiliados.perfil', $perfil))
             ->select([
                 'afiliados.*',
                 'secciones.municipio as s_municipio',
@@ -70,7 +74,7 @@ class AfiliadoController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('afiliados.index', compact('afiliados', 'q', 'seccion', 'cveMun', 'municipio', 'estatus', 'capId'));
+        return view('afiliados.index', compact('afiliados', 'q', 'seccion', 'cveMun', 'municipio', 'estatus', 'capId', 'perfil'));
     }
 
     public function create()
@@ -110,6 +114,10 @@ class AfiliadoController extends Controller
         $rules = $this->rulesStore();
         $data  = $request->validate($rules);
 
+        if (array_key_exists('observaciones', $data) && $data['observaciones'] !== null) {
+            $data['observaciones'] = $this->squish($data['observaciones']);
+        }
+
         if (empty($data['fecha_convencimiento'])) {
             $data['fecha_convencimiento'] = now();
         }
@@ -130,8 +138,11 @@ class AfiliadoController extends Controller
 
         $seccionInfo = DB::table('secciones')
             ->where('seccion', $afiliado->seccion)
-            ->when($afiliado->cve_mun, fn($q) => $q->where('cve_mun', $afiliado->cve_mun),
-                fn($q) => $q->where('municipio', $afiliado->municipio))
+            ->when(
+                $afiliado->cve_mun,
+                fn($q) => $q->where('cve_mun', $afiliado->cve_mun),
+                fn($q) => $q->where('municipio', $afiliado->municipio)
+            )
             ->select('seccion', 'municipio', 'cve_mun', 'distrito_local', 'distrito_federal', 'lista_nominal', 'centroid_lat', 'centroid_lng')
             ->first();
 
@@ -149,8 +160,11 @@ class AfiliadoController extends Controller
         }
 
         $secciones = DB::table('secciones')
-            ->when($selCve, fn($q) => $q->where('cve_mun', $selCve),
-                fn($q) => $q->where('municipio', $afiliado->municipio))
+            ->when(
+                $selCve,
+                fn($q) => $q->where('cve_mun', $selCve),
+                fn($q) => $q->where('municipio', $afiliado->municipio)
+            )
             ->orderBy('seccion')
             ->pluck('seccion');
 
@@ -180,6 +194,10 @@ class AfiliadoController extends Controller
         $rules = $this->rulesUpdate($afiliado);
         $data  = $request->validate($rules);
 
+        if (array_key_exists('observaciones', $data) && $data['observaciones'] !== null) {
+            $data['observaciones'] = $this->squish($data['observaciones']);
+        }
+
         if (empty($data['fecha_convencimiento'])) {
             $data['fecha_convencimiento'] = now();
         }
@@ -205,7 +223,7 @@ class AfiliadoController extends Controller
                 Storage::disk('public')->delete($afiliado->ine_reverso);
             }
 
-            $dir = 'afiliados/ine/'.$afiliado->id;
+            $dir = 'afiliados/ine/' . $afiliado->id;
             if (Storage::disk('public')->exists($dir)) {
                 Storage::disk('public')->deleteDirectory($dir);
             }
@@ -245,7 +263,8 @@ class AfiliadoController extends Controller
             'municipio'        => ['required', 'string', 'max:120'],
             'cve_mun'          => ['required', 'string', 'size:3'],
             'seccion'          => ['required', 'string', 'max:6'],
-            'perfil'           => ['required', 'string', 'max:120'],
+            'perfil'           => ['required', Rule::in(['Coordinador', 'Enlace', 'Apoyo'])],
+            'observaciones'    => ['nullable', 'string', 'max:255'],
             'estatus'          => ['required', Rule::in(['pendiente', 'validado', 'descartado'])],
 
             'fecha_convencimiento' => ['nullable', 'date'],
@@ -275,7 +294,8 @@ class AfiliadoController extends Controller
             'municipio'        => ['required', 'string', 'max:120'],
             'cve_mun'          => ['required', 'string', 'size:3'],
             'seccion'          => ['required', 'string', 'max:6'],
-            'perfil'           => ['required', 'string', 'max:120'],
+            'perfil'           => ['required', Rule::in(['Coordinador', 'Enlace', 'Apoyo'])],
+            'observaciones'    => ['nullable', 'string', 'max:255'],
             'estatus'          => ['required', Rule::in(['pendiente', 'validado', 'descartado'])],
 
             'fecha_convencimiento' => ['nullable', 'date'],
