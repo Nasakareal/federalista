@@ -346,47 +346,75 @@ class ReporteController extends Controller
 
     public function ineExportPdf(Request $request)
     {
-        @ini_set('memory_limit', '512M');
-        @set_time_limit(120);
+        @ini_set('memory_limit', '1024M');
+        @set_time_limit(300);
 
-        $page = max(1, (int)$request->input('page', 1));
-
-        $per  = min(18, max(3, (int)$request->input('per', 12)));
-        $off  = ($page - 1) * $per;
-
+        // Base query (respeta filtros globales)
         $q = $this->buildAfiliadosBaseQuery($request);
 
-        $rows = $q
-            ->where(function($w){
-                $w->whereNotNull('afiliados.ine_frente')
-                  ->orWhereNotNull('afiliados.ine_reverso');
-            })
-            ->orderByDesc('afiliados.created_at')
-            ->offset($off)
-            ->limit($per)
-            ->get([
-                'afiliados.id',
-                'afiliados.perfil',
-                'afiliados.nombre',
-                'afiliados.apellido_paterno',
-                'afiliados.apellido_materno',
-                'afiliados.clave_elector',
-                'afiliados.telefono',
-                'afiliados.email',
-                'afiliados.seccion',
-                'afiliados.ine_frente',
-                'afiliados.ine_reverso',
-                'afiliados.created_at',
-            ])
-            ->map(function ($r) {
-                $r->nombre_completo = trim(implode(' ', array_filter([$r->nombre, $r->apellido_paterno, $r->apellido_materno])));
-                $r->ine_frente_path  = $r->ine_frente ? public_path('storage/' . $r->ine_frente) : null;
-                $r->ine_reverso_path = $r->ine_reverso ? public_path('storage/' . $r->ine_reverso) : null;
+        // ===== Filtros (mismos que ineData) =====
+        $perfilMode = $request->input('perfil_mode', 'all'); // all | only | exclude
+        $perfiles   = $this->normalizeList($request->input('perfiles'));
+        $ids        = $this->normalizeList($request->input('afiliado_ids'));
 
-                return $r;
-            });
+        if (!empty($ids)) {
+            if ($perfilMode === 'exclude') {
+                $q->whereNotIn('afiliados.id', $ids);
+            } else {
+                $q->whereIn('afiliados.id', $ids);
+            }
+        }
 
-        $filename = 'reporte_ine_p'.$page.'_'.now()->format('Ymd_His').'.pdf';
+        if (!empty($perfiles)) {
+            if ($perfilMode === 'exclude') {
+                $q->whereNotIn('afiliados.perfil', $perfiles);
+            } else {
+                $q->whereIn('afiliados.perfil', $perfiles);
+            }
+        }
+
+        // Solo afiliados con INE
+        $q->where(function ($w) {
+            $w->whereNotNull('afiliados.ine_frente')
+              ->orWhereNotNull('afiliados.ine_reverso');
+        });
+
+        // Orden
+        $q->orderByDesc('afiliados.created_at');
+
+        // Select
+        $rows = $q->get([
+            'afiliados.id',
+            'afiliados.perfil',
+            'afiliados.nombre',
+            'afiliados.apellido_paterno',
+            'afiliados.apellido_materno',
+            'afiliados.clave_elector',
+            'afiliados.telefono',
+            'afiliados.email',
+            'afiliados.seccion',
+            'afiliados.ine_frente',
+            'afiliados.ine_reverso',
+            'afiliados.created_at',
+        ])->map(function ($r) {
+            $r->nombre_completo  = trim(implode(' ', array_filter([
+                $r->nombre,
+                $r->apellido_paterno,
+                $r->apellido_materno
+            ])));
+
+            $r->ine_frente_path  = $r->ine_frente
+                ? public_path('storage/' . $r->ine_frente)
+                : null;
+
+            $r->ine_reverso_path = $r->ine_reverso
+                ? public_path('storage/' . $r->ine_reverso)
+                : null;
+
+            return $r;
+        });
+
+        $filename = 'reporte_ine_all_' . now()->format('Ymd_His') . '.pdf';
 
         $pdf = \PDF::loadView('reportes.ine_pdf', [
             'rows'    => $rows,

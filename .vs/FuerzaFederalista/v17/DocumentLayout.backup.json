@@ -28,7 +28,7 @@
               "RelativeDocumentMoniker": "resources\\views\\reportes\\ine_pdf.blade.php",
               "ToolTip": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\reportes\\ine_pdf.blade.php",
               "RelativeToolTip": "resources\\views\\reportes\\ine_pdf.blade.php",
-              "ViewState": "AgIAAFEAAAAAAAAAAAAAAHQAAAAQAAAAAAAAAA==",
+              "ViewState": "AgIAAEkAAAAAAAAAAAAAwHMAAAAOAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002338|",
               "WhenOpened": "2026-01-21T20:56:47.601Z",
               "EditorCaption": ""
@@ -41,9 +41,10 @@
               "RelativeDocumentMoniker": "app\\Http\\Controllers\\ReporteController.php",
               "ToolTip": "C:\\wamp64\\www\\FuerzaFederalista\\app\\Http\\Controllers\\ReporteController.php",
               "RelativeToolTip": "app\\Http\\Controllers\\ReporteController.php",
-              "ViewState": "AgIAAB0BAAAAAAAAAAAAAB0BAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAHMBAAAAAAAAAAAAAH0BAACBAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002338|",
-              "WhenOpened": "2026-01-21T20:49:42.608Z"
+              "WhenOpened": "2026-01-21T20:49:42.608Z",
+              "EditorCaption": ""
             }
           ]
         }
