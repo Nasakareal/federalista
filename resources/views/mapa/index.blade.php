@@ -3,12 +3,13 @@
 @section('title','Mapa de Afiliados')
 
 @section('content')
-<div class="container-fluid h-100">
-  <div class="row h-100">
-    <div class="col-12 h-100">
-      <div id="map" style="height: calc(100vh - 100px);"></div>
-    </div>
-  </div>
+<div class="container-fluid p-0">
+  <div id="map"></div>
+
+  {{-- Conserva estatus si lo usas --}}
+  <input type="hidden" id="estatusValue" value="{{ $estatus ?? 'validado' }}">
+  {{-- Guardamos el estado seleccionado (para inicializar el control flotante) --}}
+  <input type="hidden" id="estadoSelected" value="{{ $estado ?? '' }}">
 </div>
 @endsection
 
@@ -16,11 +17,30 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
   html, body { margin:0; padding:0; height:100%; overflow:hidden; }
-  #map { width:100%; }
-  .leaflet-interactive { cursor: pointer; }
-  .info-legend { background:#fff; padding:8px 10px; border-radius:6px; box-shadow:0 1px 5px rgba(0,0,0,.3); font:14px/1.2 system-ui, sans-serif; }
-  .info-legend i { width:14px; height:14px; display:inline-block; margin-right:6px; vertical-align:middle; }
 
+  /* Mapa full pantalla (móvil friendly) */
+  #map{
+    width: 100%;
+    height: 100vh;
+    height: 100svh; /* iOS Safari */
+    height: 100dvh; /* viewport dinámico */
+  }
+
+  .leaflet-interactive { cursor: pointer; }
+
+  .info-legend {
+    background:#fff;
+    padding:8px 10px;
+    border-radius:6px;
+    box-shadow:0 1px 5px rgba(0,0,0,.3);
+    font:14px/1.2 system-ui, sans-serif;
+  }
+  .info-legend i {
+    width:14px; height:14px; display:inline-block;
+    margin-right:6px; vertical-align:middle;
+  }
+
+  /* Labels */
   .leaflet-div-icon.mun-label { background: transparent; border: none; }
   .mun-label-text{
     font: 14px/1.1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
@@ -35,15 +55,56 @@
   .map-label-text{
     display:inline-block;
     font: 600 12px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.7);
+    color:#fff;
+    text-shadow:0 1px 2px rgba(0,0,0,.7);
     background: rgba(0,0,0,.25);
-    padding:2px 6px; border-radius:4px; white-space:nowrap;
+    padding:2px 6px;
+    border-radius:4px;
+    white-space:nowrap;
     transform: translate(-50%, -50%) scale(1);
     transform-origin: 50% 50%;
   }
-  .label-dl { background: rgba(0, 86, 179, .35); }
-  .label-df { background: rgba(179, 86, 0, .35); }
-  .label-sec{ background: rgba(0, 128, 64, .35); }
+
+  /* Control flotante del selector */
+  .estado-control{
+    background:#fff;
+    border-radius:10px;
+    box-shadow: 0 6px 22px rgba(0,0,0,.18);
+    padding:10px;
+    min-width: 220px;
+    max-width: min(92vw, 360px);
+  }
+  .estado-control .title{
+    font: 700 13px/1.1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    margin:0 0 6px 0;
+  }
+  .estado-control select{
+    width:100%;
+    font: 600 13px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    padding:8px 10px;
+    border-radius:10px;
+    border:1px solid rgba(0,0,0,.15);
+    outline:none;
+    background:#fff;
+  }
+
+  /* Layers control: que no tape todo en móvil */
+  .leaflet-control-layers{
+    border-radius:10px;
+    box-shadow: 0 6px 22px rgba(0,0,0,.18);
+  }
+
+  /* iPhone notch safe area */
+  .leaflet-top.leaflet-left { padding-top: env(safe-area-inset-top); }
+  .leaflet-top.leaflet-right{ padding-top: env(safe-area-inset-top); }
+
+  @media (max-width: 768px){
+    .info-legend{ font-size:12px; }
+    .leaflet-control-layers-expanded{
+      max-height: 40vh;
+      overflow:auto;
+    }
+  }
 </style>
 @endpush
 
@@ -57,8 +118,14 @@
   const statsCVE        = @json($statsCVE) || {};
   const statsNombre     = @json($statsNombre) || {};
 
+  // Lista de geojson de estados que te mandó el controller
+  const estadosLayers = @json($states) || [];
+
   function normalize(s){
-    return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9 ]/gi,'').trim().toUpperCase();
+    return (s || '').toString()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^A-Z0-9 ]/gi,'')
+      .trim().toUpperCase();
   }
 
   const breaks = [0,5,20,50,100,250,500,1000];
@@ -75,13 +142,24 @@
     return { color:'#111', weight:1, fillColor:getColor(total), fillOpacity:0.75, interactive:true };
   }
 
-  const map = L.map('map', { zoomControl:true, doubleClickZoom:false, scrollWheelZoom:true, dragging:true });
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+  const map = L.map('map', {
+    zoomControl:true,
+    doubleClickZoom:false,
+    scrollWheelZoom:true,
+    dragging:true,
+    tap:true
+  });
+
   map.createPane('municipiosPane');  map.getPane('municipiosPane').style.zIndex = 650;
   map.createPane('overlaysPane');    map.getPane('overlaysPane').style.zIndex   = 700;
   map.createPane('labelsPane');      map.getPane('labelsPane').style.zIndex     = 800;
   map.getPane('labelsPane').style.pointerEvents = 'none';
 
-  const layersControl = L.control.layers(null, {}, { collapsed:false }).addTo(map);
+  // Control de capas: colapsado en móvil
+  const layersControl = L.control.layers(null, {}, { collapsed: isMobile }).addTo(map);
+
   const labelsGroup = L.layerGroup().addTo(map);
   layersControl.addOverlay(labelsGroup, 'Nombres de municipios');
 
@@ -127,9 +205,11 @@
     const se = map.latLngToLayerPoint(b.getSouthEast());
     const polyW = Math.abs(se.x - nw.x), polyH = Math.abs(se.y - nw.y);
     const maxW = polyW * 0.80, maxH = polyH * 0.50;
+
     textEl.style.transform = 'translate(-50%, -50%) scale(1)';
     const rect = textEl.getBoundingClientRect();
     const w0 = rect.width || 1, h0 = rect.height || 1;
+
     let scale = Math.min(maxW / w0, maxH / h0, 1);
     if (!isFinite(scale)) scale = 1;
     scale = Math.max(scale, MIN_LABEL_SCALE);
@@ -138,179 +218,180 @@
   function fitMunicipios(){ munLabels.forEach(fitMunicipio); }
   map.on('zoomend viewreset', fitMunicipios);
 
-  fetch("{{ asset('geo/michoacan.json') }}")
-    .then(r => r.json())
-    .then(function(geo){
-      const capaMunicipios = L.geoJSON(geo, {
-        pane: 'municipiosPane',
-        style: f => styleFeature(pickStats(f.properties||{}).total),
-        onEachFeature: function(feature, layer){
-          const p  = feature.properties || {};
-          const st = pickStats(p);
-          const cve    = (p.CVEGEO || (String(p.CVE_ENT||'') + String(p.CVE_MUN||''))).toString();
-          const nombre = p.NOMGEO || 'Desconocido';
-          layer.options.className = 'municipio';
-          layer.on('click', function(){
-            const html = `
-              <div style="min-width:240px">
-                <h5 style="margin:0 0 6px 0">${nombre}</h5>
-                <div><strong>Afiliados (sí):</strong> ${st.afiliados}</div>
-                <div><strong>No afiliados (no):</strong> ${st.no_afiliados}</div>
-                <div><strong>Convencidos (sí + no):</strong> ${st.convencidos}</div>
-                <div style="margin-top:6px"><small>Total (todos): ${st.total}${st.pendientes ? (' — Pendientes: ' + st.pendientes) : ''}</small></div>
-                <div><small>CVEGEO: ${cve}</small></div>
-              </div>`;
-            this.bindPopup(html, { closeButton:true }).openPopup();
-            this.setStyle({ weight:3, fillOpacity:1.0 }); this.bringToFront();
-          });
-          layer.on('mouseover', function(){ this.setStyle({ weight:2, fillOpacity:0.9 }); this.bringToFront(); });
-          layer.on('mouseout',  function(){ this.setStyle(styleFeature(st.total)); });
+  // ===========
+  // Selector de estado como CONTROL dentro del mapa (para que no tape)
+  // ===========
+  const EstadoControl = L.Control.extend({
+    options: { position: 'topleft' },
+    onAdd: function(){
+      const div = L.DomUtil.create('div','estado-control');
 
-          let latlng;
-          try {
-            const com = turf.centerOfMass(feature);
-            const c   = com?.geometry?.coordinates;
-            latlng = (c && c.length>=2) ? [c[1], c[0]] : layer.getBounds().getCenter();
-          } catch(_) {
-            latlng = layer.getBounds().getCenter();
-          }
+      // Evita que al tocar el control se mueva el mapa
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.disableScrollPropagation(div);
 
-          const label = L.marker(latlng, {
-            pane: 'labelsPane',
-            interactive: false, keyboard: false, bubblingMouseEvents: false,
-            icon: L.divIcon({ className: 'mun-label', html: `<span class="mun-label-text">${nombre}</span>` })
-          }).addTo(labelsGroup);
+      const selectedFromServer = document.getElementById('estadoSelected').value || '';
 
-          const item = { layer, label };
-          item.label.on('add', () => {
-            item.textEl = item.label.getElement().querySelector('.mun-label-text');
-            fitMunicipio(item);
-          });
-          munLabels.push(item);
-        }
-      }).addTo(map);
+      const opts = [
+        `<option value="">Todos (sin filtro)</option>`,
+        ...estadosLayers.map(l => {
+          const name = (l && l.name) ? String(l.name) : '';
+          const sel = (selectedFromServer === name) ? 'selected' : '';
+          return `<option value="${name.replace(/"/g,'&quot;')}" ${sel}>${name}</option>`;
+        })
+      ].join('');
 
-      layersControl.addOverlay(capaMunicipios, 'Municipios (total)');
+      div.innerHTML = `
+        <div class="title">Estado</div>
+        <select id="estadoSelect">${opts}</select>
+      `;
 
-      const bounds = capaMunicipios.getBounds();
-      map.fitBounds(bounds); map.setMaxBounds(bounds.pad(0.05));
-      setTimeout(fitMunicipios, 0);
-    })
-    .catch(err => console.error('Error cargando GeoJSON:', err));
+      return div;
+    }
+  });
+  map.addControl(new EstadoControl());
 
-  function pickProp(props, keys){
-    for (const k of keys) if (props && props[k] !== undefined && props[k] !== null && props[k] !== '') return props[k];
-    return null;
-  }
-  function getLabelInfo(props){
-    const sec = pickProp(props, ['SECCION','Seccion','seccion','SEC']);
-    if (sec) return { text: `Sección ${sec}`, className: 'label-sec' };
-    const df  = pickProp(props, ['DISTRITO_F','Distrito_F','DISTRITO_FEDERAL','DF']);
-    if (df)  return { text: `DF ${df}`,  className: 'label-df'  };
-    const dl  = pickProp(props, ['DISTRITO_L','Distrito_L','DISTRITO_LOCAL','DL']);
-    if (dl)  return { text: `DL ${dl}`,  className: 'label-dl'  };
-    return { text: 'Capa', className: '' };
-  }
-  function centerLatLng(feature, layer){
-    try {
-      const c = turf.centerOfMass(feature)?.geometry?.coordinates;
-      if (c && c.length >= 2) return L.latLng(c[1], c[0]);
-    } catch(e){}
-    try { return layer.getBounds().getCenter(); } catch(e){}
-    return null;
+  // ===========
+  // MUNICIPIOS (por estado)
+  // ===========
+  let capaMunicipios = null;
+
+  function getEstadoURLSeleccionado(){
+    const sel = document.getElementById('estadoSelect');
+    const estadoName = sel ? (sel.value || '') : '';
+    if (!estadoName) return null;
+
+    const normSel = normalize(estadoName);
+
+    // tus items vienen como {id,name,url,norm}
+    const found = estadosLayers.find(x => normalize(x.name) === normSel || (x.norm && x.norm === normSel));
+    if (found && found.url) return found.url;
+
+    const found2 = estadosLayers.find(x => (x.name || '') === estadoName);
+    return found2 ? found2.url : null;
   }
 
-  const overlayLabelItems = [];
-  const MIN_LABEL_SCALE_OVER = 0.2;
-  function fitOverlayOne(item){
-    const root = item.marker.getElement();
-    if (!root) return;
-    const span = root.querySelector('.map-label-text');
-    if (!span) return;
-    const b  = item.layer.getBounds();
-    const nw = map.latLngToLayerPoint(b.getNorthWest());
-    const se = map.latLngToLayerPoint(b.getSouthEast());
-    const polyW = Math.abs(se.x - nw.x), polyH = Math.abs(se.y - nw.y);
-    const maxW = polyW * 0.80, maxH = polyH * 0.50;
-    span.style.transform = 'translate(-50%, -50%) scale(1)';
-    const rect = span.getBoundingClientRect();
-    const w0 = rect.width || 1, h0 = rect.height || 1;
-    let scale = Math.min(maxW / w0, maxH / h0, 1);
-    if (!isFinite(scale)) scale = 1;
-    scale = Math.max(scale, MIN_LABEL_SCALE_OVER);
-    span.style.transform = 'translate(-50%, -50%) scale(' + scale.toFixed(3) + ')';
-  }
-  function fitOverlayAll(){ overlayLabelItems.forEach(fitOverlayOne); }
-  map.on('zoomend viewreset', fitOverlayAll);
-
-  function baseOverlayStyle(feature){
-    const t = feature && feature.geometry && feature.geometry.type || '';
-    if (/LineString/i.test(t)) return { weight: 2, color:'#333' };
-    if (/Polygon/i.test(t))    return { weight: 1, color:'#333', fill:false };
-    return {};
-  }
-  function overlayPopupHTML(props){
-    const sec = pickProp(props, ['SECCION','Seccion','seccion','SEC']);
-    const dl  = pickProp(props, ['DISTRITO_L','Distrito_L','DISTRITO_LOCAL','DL']);
-    const df  = pickProp(props, ['DISTRITO_F','Distrito_F','DISTRITO_FEDERAL','DF']);
-    const ent = pickProp(props, ['ENTIDAD','Entidad','CVE_ENT']);
-    const title = sec ? `Sección ${sec}` : (dl ? `Distrito Local ${dl}` : (df ? `Distrito Federal ${df}` : 'Detalle'));
-    const rows = [];
-    if (sec) rows.push(`<div><strong>Sección:</strong> ${sec}</div>`);
-    if (dl)  rows.push(`<div><strong>Distrito Local:</strong> ${dl}</div>`);
-    if (df)  rows.push(`<div><strong>Distrito Federal:</strong> ${df}</div>`);
-    if (ent) rows.push(`<div><small>Entidad: ${ent}</small></div>`);
-    return `<div style="min-width:220px">
-      <h5 style="margin:0 0 6px 0">${title}</h5>
-      ${rows.join('')}
-    </div>`;
+  function limpiarMunicipios(){
+    labelsGroup.clearLayers();
+    munLabels.length = 0;
+    if (capaMunicipios) {
+      map.removeLayer(capaMunicipios);
+      try { layersControl.removeLayer(capaMunicipios); } catch(e){}
+      capaMunicipios = null;
+    }
   }
 
-  @foreach ($layers as $l)
-    fetch("{{ $l['url'] }}")
+  function cargarMunicipiosDeEstado(urlGeoJson){
+    if (!urlGeoJson) {
+      limpiarMunicipios();
+      return;
+    }
+
+    limpiarMunicipios();
+
+    fetch(urlGeoJson)
       .then(r => r.json())
-      .then(geo => {
-        const group = L.layerGroup();
-
-        const geoLayer = L.geoJSON(geo, {
-          pane: 'overlaysPane',
-          style: baseOverlayStyle,
+      .then(function(geo){
+        capaMunicipios = L.geoJSON(geo, {
+          pane: 'municipiosPane',
+          style: f => styleFeature(pickStats((f && f.properties) ? f.properties : {}).total),
           onEachFeature: function(feature, layer){
-            layer.on('click', function(e){
-              const html = overlayPopupHTML(feature.properties || {});
-              L.popup({ closeButton:true }).setLatLng(e.latlng).setContent(html).openOn(map);
-              this.setStyle({ weight:3, color:'#000' }); this.bringToFront();
+            const p  = feature.properties || {};
+            const st = pickStats(p);
+            const cve    = (p.CVEGEO || (String(p.CVE_ENT||'') + String(p.CVE_MUN||''))).toString();
+            const nombre = p.NOMGEO || 'Desconocido';
+
+            layer.options.className = 'municipio';
+
+            layer.on('click', function(){
+              const html = `
+                <div style="min-width:240px">
+                  <h5 style="margin:0 0 6px 0">${nombre}</h5>
+                  <div><strong>Afiliados (sí):</strong> ${st.afiliados}</div>
+                  <div><strong>No afiliados (no):</strong> ${st.no_afiliados}</div>
+                  <div><strong>Convencidos (sí + no):</strong> ${st.convencidos}</div>
+                  <div style="margin-top:6px"><small>Total (todos): ${st.total}${st.pendientes ? (' — Pendientes: ' + st.pendientes) : ''}</small></div>
+                  <div><small>CVEGEO: ${cve}</small></div>
+                </div>`;
+              this.bindPopup(html, { closeButton:true }).openPopup();
+              this.setStyle({ weight:3, fillOpacity:1.0 }); this.bringToFront();
             });
-            layer.on('mouseover', function(){ this.setStyle({ weight:2 }); this.bringToFront(); });
-            layer.on('mouseout',  function(){ this.setStyle(baseOverlayStyle(feature)); });
-          }
-        }).addTo(group);
 
-        L.geoJSON(geo, {
-          onEachFeature: function(feature, lyr){
-            const info = getLabelInfo(feature.properties || {});
-            const latlng = centerLatLng(feature, lyr);
-            if (!latlng) return;
-            const marker = L.marker(latlng, {
+            layer.on('mouseover', function(){ this.setStyle({ weight:2, fillOpacity:0.9 }); this.bringToFront(); });
+            layer.on('mouseout',  function(){ this.setStyle(styleFeature(st.total)); });
+
+            let latlng;
+            try {
+              const com = turf.centerOfMass(feature);
+              const c   = com?.geometry?.coordinates;
+              latlng = (c && c.length>=2) ? [c[1], c[0]] : layer.getBounds().getCenter();
+            } catch(_) {
+              latlng = layer.getBounds().getCenter();
+            }
+
+            const label = L.marker(latlng, {
               pane: 'labelsPane',
-              icon: L.divIcon({
-                className: 'map-label',
-                html: `<span class="map-label-text ${info.className}">${info.text}</span>`,
-                iconSize: null
-              }),
-              interactive: false
-            }).addTo(group);
+              interactive: false, keyboard: false, bubblingMouseEvents: false,
+              icon: L.divIcon({ className: 'mun-label', html: `<span class="mun-label-text">${nombre}</span>` })
+            }).addTo(labelsGroup);
 
-            const item = { layer: lyr, marker };
-            marker.on('add', () => fitOverlayOne(item));
-            overlayLabelItems.push(item);
+            const item = { layer, label };
+            item.label.on('add', () => {
+              item.textEl = item.label.getElement().querySelector('.mun-label-text');
+              fitMunicipio(item);
+            });
+            munLabels.push(item);
           }
-        });
+        }).addTo(map);
 
-        layersControl.addOverlay(group, "{{ $l['name'] }}");
-        map.on('overlayadd', e => { if (e.layer === group) setTimeout(fitOverlayAll, 0); });
+        layersControl.addOverlay(capaMunicipios, 'Municipios (total)');
+
+        const bounds = capaMunicipios.getBounds();
+        map.fitBounds(bounds);
+
+        // En móvil, NO lo amarres tan duro, si no se siente “encerrado”
+        if (!isMobile) {
+          map.setMaxBounds(bounds.pad(0.05));
+        }
+
+        setTimeout(fitMunicipios, 0);
       })
-      .catch(err => console.error('Error capa {{ $l['name'] }}:', err));
-  @endforeach
+      .catch(err => console.error('Error cargando GeoJSON de estado:', err));
+  }
+
+  // ===========
+  // CAMBIO DE ESTADO: recarga con querystring
+  // ===========
+  function wireEstadoChange(){
+    const sel = document.getElementById('estadoSelect');
+    if (!sel) return;
+
+    sel.addEventListener('change', function(){
+      const estado = this.value || '';
+      const estatus = document.getElementById('estatusValue').value || 'validado';
+
+      const url = new URL(window.location.href);
+      if (estado) url.searchParams.set('estado', estado);
+      else url.searchParams.delete('estado');
+
+      if (estatus) url.searchParams.set('estatus', estatus);
+      window.location.href = url.toString();
+    });
+  }
+
+  // ===========
+  // CARGA INICIAL
+  // ===========
+  (function init(){
+    // centra el mapa en algo aunque no haya estado seleccionado
+    map.setView([19.4326, -99.1332], 5);
+
+    // Espera un tick a que el control se pinte (y exista el select)
+    setTimeout(() => {
+      wireEstadoChange();
+      const url = getEstadoURLSeleccionado();
+      cargarMunicipiosDeEstado(url);
+    }, 0);
+  })();
 </script>
 @endpush

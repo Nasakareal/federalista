@@ -94,8 +94,10 @@ Route::middleware(['auth','force.password.change'])->group(function () {
         Route::get('/afiliados/facets', [ReporteController::class,'facets'])->name('afiliados.facets');
     });
 
-    Route::get('/mapa', [MapaController::class,'index'])->name('mapa.index')->middleware('permission:mapa.ver');
-    Route::get('/mapa/data', [MapaController::class,'data'])->name('mapa.data')->middleware('permission:mapa.ver');
+        Route::get('/mapa', [MapaController::class,'index'])->name('mapa.index')->middleware('permission:mapa.ver');
+        Route::get('/mapa/data', [MapaController::class,'data'])->name('mapa.data')->middleware('permission:mapa.ver');
+        Route::get('/mapa/mexico', [MapaController::class,'mexico'])->name('mapa.mexico')->middleware('permission:mapa.ver');
+        Route::get('/mapa/mexico/data', [MapaController::class,'mexicoData'])->name('mapa.mexico.data')->middleware('permission:mapa.ver');
 
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/', [SettingsController::class,'index'])->name('index')->middleware('permission:settings.ver');

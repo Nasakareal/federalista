@@ -10,87 +10,154 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
 
-  <style>
-    :root{
-      /* Paleta existente */
-      --granate:#7a0019;
-      --granate-osc:#5c0013;
+<style>
+  :root{
+    --granate:#7a0019;
+    --granate-osc:#5c0013;
 
-      /* === AZULES (reemplazan a los rosas, MISMAS variables para no tocar nada más) === */
-      --rosa-1:#1e88e5;  /* azul fuerte */
-      --rosa-2:#1565c0;  /* azul por defecto */
-      --rosa-3:#90caf9;  /* azul claro */
+    --rosa-1:#1e88e5;
+    --rosa-2:#1565c0;
+    --rosa-3:#90caf9;
 
-      /* === Grises del muestrario (para fondo de página) === */
-      --gris-1:#464e59;  /* oscuro */
-      --gris-2:#3c434d;  /* medio-oscuro */
-      --gris-3:#cfd8e6;  /* claro */
+    --gris-1:#464e59;
+    --gris-2:#3c434d;
+    --gris-3:#cfd8e6;
 
-      /* Fondo general DETRÁS del content */
-      --humo: var(--gris-3);
+    --humo: var(--gris-3);
+  }
+
+  html,body{height:100%;background:var(--humo)}
+
+  .navbar-glass{backdrop-filter:blur(8px);background:rgba(255,255,255,.75)}
+
+  .nav-link.active,.dropdown-item.active{font-weight:700;color:var(--granate)!important}
+
+  .btn-granate{background:var(--granate);color:#fff;border:none}
+  .btn-granate:hover{background:var(--granate-osc);color:#fff}
+
+  .dropdown-menu{border-radius:12px}
+  .content-wrap{padding-top:84px}
+  .app-footer{color:#666}
+
+  .dropdown.keep-open:hover > .dropdown-menu{display:block}
+
+  .leaflet-pane.leaflet-popup-pane { z-index: 100000 !important; }
+  .leaflet-popup { z-index: 100001 !important; }
+  .leaflet-tooltip { z-index: 100002 !important; }
+
+  .bg-rosa-1{background-color:var(--rosa-1)!important}
+  .bg-rosa-2{background-color:var(--rosa-2)!important}
+  .bg-rosa-3{background-color:var(--rosa-3)!important}
+  .bg-rosa-grad{background:linear-gradient(90deg,var(--rosa-2),var(--rosa-1))!important}
+
+  .navbar-rosa .navbar-brand,
+  .navbar-rosa .nav-link,
+  .navbar-rosa .navbar-toggler { color:#fff !important; }
+
+  .navbar-rosa .nav-link:hover{ opacity:.9; }
+
+  nav.navbar-rosa .nav-link.active,
+  nav.navbar-rosa .dropdown-item.active { color:#fff !important; }
+
+  nav.navbar-rosa .dropdown-menu{
+    background:#fff !important;
+    border:1px solid rgba(0,0,0,.12) !important;
+    box-shadow:0 10px 25px rgba(0,0,0,.18) !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+
+  nav.navbar-rosa .dropdown-item{
+    color:#111 !important;
+  }
+
+  nav.navbar-rosa .dropdown-item:hover,
+  nav.navbar-rosa .dropdown-item:focus{
+    background:rgba(0,0,0,.06) !important;
+    color:#111 !important;
+  }
+
+  nav.navbar-rosa .dropdown-item.active{
+    background:rgba(0,0,0,.10) !important;
+    color:#111 !important;
+    font-weight:700;
+  }
+
+  nav.navbar-rosa .dropdown-divider{
+    border-color:rgba(0,0,0,.12) !important;
+  }
+
+  nav.navbar-rosa .offcanvas{
+    background: var(--rosa-2);
+    color:#fff;
+  }
+  nav.navbar-rosa .offcanvas .offcanvas-title{color:#fff}
+  nav.navbar-rosa .offcanvas .btn-close{filter: invert(1) grayscale(100%);}
+  nav.navbar-rosa .offcanvas .nav-link{color:#fff !important}
+
+  nav.navbar-rosa .offcanvas .dropdown-menu{
+    background: rgba(255,255,255,.12) !important;
+    border-color: rgba(255,255,255,.2) !important;
+    box-shadow:none !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+  nav.navbar-rosa .offcanvas .dropdown-item{color:#fff !important}
+  nav.navbar-rosa .offcanvas .dropdown-item:hover{background: rgba(255,255,255,.12) !important}
+  nav.navbar-rosa .offcanvas .dropdown-divider{border-color: rgba(255,255,255,.25) !important}
+
+  nav.navbar .dropdown-menu,
+  .navbar .dropdown-menu{
+    background:#fff !important;
+    border:1px solid rgba(0,0,0,.12) !important;
+    box-shadow:0 10px 25px rgba(0,0,0,.18) !important;
+    opacity:1 !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+
+  nav.navbar .dropdown-menu .dropdown-item,
+  .navbar .dropdown-menu .dropdown-item{
+    color:#111 !important;
+  }
+
+  nav.navbar .dropdown-menu .dropdown-item:hover,
+  nav.navbar .dropdown-menu .dropdown-item:focus,
+  .navbar .dropdown-menu .dropdown-item:hover,
+  .navbar .dropdown-menu .dropdown-item:focus{
+    background:rgba(0,0,0,.06) !important;
+    color:#111 !important;
+  }
+
+  nav.navbar .dropdown-menu .dropdown-item.active,
+  .navbar .dropdown-menu .dropdown-item.active{
+    background:rgba(0,0,0,.10) !important;
+    color:#111 !important;
+    font-weight:700;
+  }
+
+  nav.navbar .dropdown-divider,
+  .navbar .dropdown-divider{
+    border-color:rgba(0,0,0,.12) !important;
+  }
+
+  @media (max-width: 991.98px){
+    #mainNav.offcanvas .dropdown-menu{
+      background: rgba(255,255,255,.12) !important;
+      border-color: rgba(255,255,255,.2) !important;
+      box-shadow:none !important;
     }
+    #mainNav.offcanvas .dropdown-item{ color:#fff !important; }
+    #mainNav.offcanvas .dropdown-item:hover{ background: rgba(255,255,255,.12) !important; }
+    #mainNav.offcanvas .dropdown-divider{ border-color: rgba(255,255,255,.25) !important; }
+  }
+</style>
 
-    html,body{height:100%;background:var(--humo)}
-
-    /* Navbar de vidrio (por si lo quieres en otras vistas) */
-    .navbar-glass{backdrop-filter:blur(8px);background:rgba(255,255,255,.75)}
-
-    /* Activo general (fuera del navbar rosa) */
-    .nav-link.active,.dropdown-item.active{font-weight:700;color:var(--granate)!important}
-
-    .btn-granate{background:var(--granate);color:#fff;border:none}
-    .btn-granate:hover{background:var(--granate-osc);color:#fff}
-
-    .dropdown-menu{border-radius:12px}
-    .content-wrap{padding-top:84px}
-    .app-footer{color:#666}
-    .dropdown.keep-open:hover .dropdown-menu.show{display:block}
-
-    /* --- Leaflet: asegurar popups SIEMPRE arriba de todo --- */
-    .leaflet-pane.leaflet-popup-pane { z-index: 100000 !important; }
-    .leaflet-popup { z-index: 100001 !important; }
-    .leaflet-tooltip { z-index: 100002 !important; }
-
-    /* ====== Utilidades de fondo rosa (se quedan IGUAL, solo cambió el valor de --rosa-*) ====== */
-    .bg-rosa-1{background-color:var(--rosa-1)!important}
-    .bg-rosa-2{background-color:var(--rosa-2)!important}
-    .bg-rosa-3{background-color:var(--rosa-3)!important}
-    .bg-rosa-grad{background:linear-gradient(90deg,var(--rosa-2),var(--rosa-1))!important}
-
-    /* ====== Ajustes de contraste para navbar en rosa ====== */
-    .navbar-rosa .navbar-brand,
-    .navbar-rosa .nav-link,
-    .navbar-rosa .navbar-toggler { color:#fff !important; }
-
-    .navbar-rosa .nav-link:hover{ opacity:.9; }
-
-    nav.navbar-rosa .nav-link.active,
-    nav.navbar-rosa .dropdown-item.active { color:#fff !important; }
-
-    /* ====== FIX MÓVIL: Offcanvas por defecto es BLANCO y tus links están en BLANCO -> no se ven ====== */
-    nav.navbar-rosa .offcanvas{
-      background: var(--rosa-2);
-      color:#fff;
-    }
-    nav.navbar-rosa .offcanvas .offcanvas-title{color:#fff}
-    nav.navbar-rosa .offcanvas .btn-close{filter: invert(1) grayscale(100%);}
-    nav.navbar-rosa .offcanvas .nav-link{color:#fff !important}
-    nav.navbar-rosa .offcanvas .dropdown-menu{
-      background: rgba(255,255,255,.12);
-      border-color: rgba(255,255,255,.2);
-    }
-    nav.navbar-rosa .offcanvas .dropdown-item{color:#fff}
-    nav.navbar-rosa .offcanvas .dropdown-item:hover{background: rgba(255,255,255,.12)}
-    nav.navbar-rosa .offcanvas .dropdown-divider{border-color: rgba(255,255,255,.25)}
-  </style>
-
-  {{-- Acepta ambos stacks para CSS de vistas --}}
   @stack('styles')
   @stack('css')
 </head>
 <body>
 @php
-  // Helper "activo" (protegido para no redeclarar)
   if (!function_exists('is_active')) {
     function is_active($patterns){
       foreach((array)$patterns as $p){
@@ -137,7 +204,6 @@
             </li>
             @endcan
 
-
           @can('secciones.ver')
           <li class="nav-item">
             <a class="nav-link {{ is_active(['secciones.*']) }}" href="{{ route('secciones.index') }}">
@@ -164,12 +230,29 @@
           @endcan
 
           @can('mapa.ver')
-          <li class="nav-item">
-            <a class="nav-link {{ is_active('mapa.index') }}" href="{{ route('mapa.index') }}">
-              <i class="fa-solid fa-map-location-dot me-1"></i> Mapa
-            </a>
-          </li>
-          @endcan
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle {{ is_active('mapa.index') }} {{ is_active('mapa.mexico') }}"
+                 href="#"
+                 role="button"
+                 data-bs-toggle="dropdown"
+                 aria-expanded="false">
+                <i class="fa-solid fa-map-location-dot me-1"></i> Mapa
+              </a>
+
+              <ul class="dropdown-menu">
+                <li>
+                  <a class="dropdown-item {{ is_active('mapa.index') }}" href="{{ route('mapa.index') }}">
+                    <i class="fa-solid fa-location-dot me-1"></i> Por estado
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item {{ is_active('mapa.mexico') }}" href="{{ route('mapa.mexico') }}">
+                    <i class="fa-solid fa-earth-americas me-1"></i> México
+                  </a>
+                </li>
+              </ul>
+            </li>
+            @endcan
 
           @can('reportes.ver')
           <li class="nav-item dropdown keep-open">
@@ -249,7 +332,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // Cerrar dropdowns al hacer click fuera
   document.addEventListener('click', (e) => {
     const openMenus = document.querySelectorAll('.dropdown-menu.show');
     openMenus.forEach(menu => {
@@ -261,7 +343,6 @@
     });
   });
 
-  // Cerrar dropdown al salir con el mouse (hover persistente)
   document.querySelectorAll('.dropdown.keep-open').forEach(dd => {
     let to = null;
 
@@ -278,14 +359,11 @@
     });
   });
 
-  // Cerrar offcanvas SOLO cuando realmente navegas (no cuando abres submenú)
   document.querySelectorAll('#mainNav a.nav-link, #mainNav a.dropdown-item').forEach(a => {
     a.addEventListener('click', (e) => {
-      // Si es toggle de dropdown (Actividades/Reportes/Settings), NO cerrar
       if (a.classList.contains('dropdown-toggle')) return;
       if (a.getAttribute('data-bs-toggle') === 'dropdown') return;
 
-      // Si no navega (href # o vacío), NO cerrar
       const href = (a.getAttribute('href') || '').trim();
       if (href === '' || href === '#') return;
 

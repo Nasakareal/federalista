@@ -3,12 +3,16 @@
   "WorkspaceRootPath": "C:\\wamp64\\www\\FuerzaFederalista\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\wamp64\\www\\FuerzaFederalista\\app\\Http\\Controllers\\ReporteController.php||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\Http\\Controllers\\ReporteController.php||{3B902123-F8A7-4915-9F01-361F908088D0}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\mapa\\index.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:resources\\views\\mapa\\index.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\reportes\\ine_pdf.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:resources\\views\\reportes\\ine_pdf.blade.php||{3B902123-F8A7-4915-9F01-361F908088D0}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\wamp64\\www\\FuerzaFederalista\\app\\Http\\Controllers\\MapaController.php||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\Http\\Controllers\\MapaController.php||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\wamp64\\www\\FuerzaFederalista\\routes\\web.php||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:routes\\web.php||{3B902123-F8A7-4915-9F01-361F908088D0}"
     }
   ],
   "DocumentGroupContainers": [
@@ -22,28 +26,40 @@
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "ine_pdf.blade.php",
-              "DocumentMoniker": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\reportes\\ine_pdf.blade.php",
-              "RelativeDocumentMoniker": "resources\\views\\reportes\\ine_pdf.blade.php",
-              "ToolTip": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\reportes\\ine_pdf.blade.php",
-              "RelativeToolTip": "resources\\views\\reportes\\ine_pdf.blade.php",
-              "ViewState": "AgIAAEkAAAAAAAAAAAAAwHMAAAAOAAAAAAAAAA==",
+              "DocumentIndex": 2,
+              "Title": "web.php",
+              "DocumentMoniker": "C:\\wamp64\\www\\FuerzaFederalista\\routes\\web.php",
+              "RelativeDocumentMoniker": "routes\\web.php",
+              "ToolTip": "C:\\wamp64\\www\\FuerzaFederalista\\routes\\web.php",
+              "RelativeToolTip": "routes\\web.php",
+              "ViewState": "AgIAAFQAAAAAAAAAAAAAAGIAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002338|",
-              "WhenOpened": "2026-01-21T20:56:47.601Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-28T21:54:25.264Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "ReporteController.php",
-              "DocumentMoniker": "C:\\wamp64\\www\\FuerzaFederalista\\app\\Http\\Controllers\\ReporteController.php",
-              "RelativeDocumentMoniker": "app\\Http\\Controllers\\ReporteController.php",
-              "ToolTip": "C:\\wamp64\\www\\FuerzaFederalista\\app\\Http\\Controllers\\ReporteController.php",
-              "RelativeToolTip": "app\\Http\\Controllers\\ReporteController.php",
-              "ViewState": "AgIAAFsBAAAAAAAAAAAAAFsBAAAAAAAAAAAAAA==",
+              "Title": "index.blade.php",
+              "DocumentMoniker": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\mapa\\index.blade.php",
+              "RelativeDocumentMoniker": "resources\\views\\mapa\\index.blade.php",
+              "ToolTip": "C:\\wamp64\\www\\FuerzaFederalista\\resources\\views\\mapa\\index.blade.php",
+              "RelativeToolTip": "resources\\views\\mapa\\index.blade.php",
+              "ViewState": "AgIAAFwBAAAAAAAAAAAwwI0BAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002338|",
-              "WhenOpened": "2026-01-21T20:49:42.608Z",
+              "WhenOpened": "2026-01-28T21:53:07.626Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MapaController.php",
+              "DocumentMoniker": "C:\\wamp64\\www\\FuerzaFederalista\\app\\Http\\Controllers\\MapaController.php",
+              "RelativeDocumentMoniker": "app\\Http\\Controllers\\MapaController.php",
+              "ToolTip": "C:\\wamp64\\www\\FuerzaFederalista\\app\\Http\\Controllers\\MapaController.php",
+              "RelativeToolTip": "app\\Http\\Controllers\\MapaController.php",
+              "ViewState": "AgIAADYAAAAAAAAAAAAwwFkAAABLAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002338|",
+              "WhenOpened": "2026-01-28T21:51:16.001Z",
               "EditorCaption": ""
             }
           ]
