@@ -22,13 +22,28 @@ class AfiliadoController extends Controller
         $estatus   = $request->query('estatus');
         $capId     = $request->query('capturista_id');
         $perfil    = $request->query('perfil');
+        $estado    = $request->query('estado');
 
         $full = $this->fullNameField();
+
         $hasCveMun = Schema::hasColumn('afiliados', 'cve_mun');
+        $hasCveGeo = Schema::hasColumn('afiliados', 'cvegeo');
+        $hasSeccionesCvegeo = Schema::hasColumn('secciones', 'cvegeo');
+
+        $cveEnt = null;
+        if ($hasCveGeo && !empty($estado)) {
+            $cveEnt = $this->getCveEntFromEstado($estado);
+        }
 
         $afiliados = Afiliado::query()
-            ->leftJoin('secciones', function ($j) use ($hasCveMun) {
+            ->leftJoin('secciones', function ($j) use ($hasCveGeo, $hasSeccionesCvegeo, $hasCveMun) {
                 $j->on('secciones.seccion', '=', 'afiliados.seccion');
+
+                if ($hasCveGeo && $hasSeccionesCvegeo) {
+                    $j->on('secciones.cvegeo', '=', 'afiliados.cvegeo');
+                    return;
+                }
+
                 if ($hasCveMun) {
                     $j->on('secciones.cve_mun', '=', 'afiliados.cve_mun');
                 } else {
@@ -46,6 +61,7 @@ class AfiliadoController extends Controller
                             ["%{$q}%"]
                         );
                     }
+
                     $w->orWhere('afiliados.telefono', 'like', "%{$q}%")
                       ->orWhere('afiliados.email', 'like', "%{$q}%")
                       ->orWhere('afiliados.clave_elector', 'like', "%{$q}%")
@@ -59,6 +75,11 @@ class AfiliadoController extends Controller
             ->when($estatus, fn($qb) => $qb->where('afiliados.estatus', $estatus))
             ->when($capId, fn($qb) => $qb->where('afiliados.capturista_id', $capId))
             ->when($perfil, fn($qb) => $qb->where('afiliados.perfil', $perfil))
+            ->when($cveEnt, function ($qb) use ($cveEnt, $hasCveGeo) {
+                if ($hasCveGeo) {
+                    $qb->whereRaw("LEFT(afiliados.cvegeo,2) = ?", [$cveEnt]);
+                }
+            })
             ->select([
                 'afiliados.*',
                 'secciones.municipio as s_municipio',
@@ -74,34 +95,47 @@ class AfiliadoController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('afiliados.index', compact('afiliados', 'q', 'seccion', 'cveMun', 'municipio', 'estatus', 'capId', 'perfil'));
+        $estados = $this->listEstadosDisponibles();
+
+        return view('afiliados.index', compact(
+            'afiliados', 'q', 'seccion', 'cveMun', 'municipio', 'estatus', 'capId', 'perfil', 'estado', 'estados'
+        ));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $municipios = $this->cargarMunicipiosDesdeGeo();
+        $estado = (string)$request->query('estado', '');
+
+        $estados = $this->listEstadosDisponibles();
+        if (empty($estado) && count($estados) > 0) {
+            $estado = $estados[0];
+        }
+
+        $municipios = $this->cargarMunicipiosDesdeGeo($estado);
 
         $secciones = collect();
         if ($municipios->count() > 0) {
-            $cve = $municipios->first()->cve_mun;
+            $cve = (string)$municipios->first()->cve_mun;
             $secciones = DB::table('secciones')
                 ->where('cve_mun', $cve)
                 ->orderBy('seccion')
                 ->pluck('seccion');
         }
 
-        $rules    = $this->rulesStore();
+        $rules = $this->rulesStore();
         $required = $this->requiredMap($rules);
         $fullNameField = $this->fullNameField();
 
-        return view('afiliados.create', compact('municipios', 'secciones', 'required', 'fullNameField'));
+        return view('afiliados.create', compact(
+            'estados', 'estado', 'municipios', 'secciones', 'required', 'fullNameField'
+        ));
     }
 
     public function store(Request $request)
     {
         $full = $this->fullNameField();
 
-        $raw  = $this->squish($request->input($full, ''));
+        $raw = $this->squish($request->input($full, ''));
         $name = Str::upper(Str::ascii($raw));
         $request->merge([$full => $name]);
 
@@ -112,7 +146,7 @@ class AfiliadoController extends Controller
         }
 
         $rules = $this->rulesStore();
-        $data  = $request->validate($rules);
+        $data = $request->validate($rules);
 
         if (array_key_exists('observaciones', $data) && $data['observaciones'] !== null) {
             $data['observaciones'] = $this->squish($data['observaciones']);
@@ -123,6 +157,12 @@ class AfiliadoController extends Controller
         }
 
         $data['capturista_id'] = Auth::id();
+
+        if (Schema::hasColumn('afiliados', 'cvegeo')) {
+            $estado = (string)($data['estado'] ?? $request->input('estado') ?? $request->query('estado') ?? '');
+            $cveEnt = $this->getCveEntFromEstado($estado);
+            $data['cvegeo'] = $cveEnt . str_pad((string)($data['cve_mun'] ?? ''), 3, '0', STR_PAD_LEFT);
+        }
 
         $data = $this->storeIneFiles($request, $data, null);
 
@@ -136,22 +176,41 @@ class AfiliadoController extends Controller
     {
         $afiliado->load('capturista');
 
+        $hasSeccionesCvegeo = Schema::hasColumn('secciones', 'cvegeo');
+        $hasAfiliadosCvegeo = Schema::hasColumn('afiliados', 'cvegeo');
+
         $seccionInfo = DB::table('secciones')
             ->where('seccion', $afiliado->seccion)
             ->when(
-                $afiliado->cve_mun,
-                fn($q) => $q->where('cve_mun', $afiliado->cve_mun),
-                fn($q) => $q->where('municipio', $afiliado->municipio)
+                $hasSeccionesCvegeo && $hasAfiliadosCvegeo && !empty($afiliado->cvegeo),
+                fn($q) => $q->where('cvegeo', $afiliado->cvegeo),
+                function ($q) use ($afiliado) {
+                    $q->when(
+                        !empty($afiliado->cve_mun),
+                        fn($qq) => $qq->where('cve_mun', $afiliado->cve_mun),
+                        fn($qq) => $qq->where('municipio', $afiliado->municipio)
+                    );
+                }
             )
-            ->select('seccion', 'municipio', 'cve_mun', 'distrito_local', 'distrito_federal', 'lista_nominal', 'centroid_lat', 'centroid_lng')
+            ->select('seccion', 'municipio', 'cve_mun', 'distrito_local', 'distrito_federal', 'lista_nominal', 'centroid_lat', 'centroid_lng', 'cvegeo')
             ->first();
 
         return view('afiliados.show', compact('afiliado', 'seccionInfo'));
     }
 
-    public function edit(Afiliado $afiliado)
+    public function edit(Request $request, Afiliado $afiliado)
     {
-        $municipios = $this->cargarMunicipiosDesdeGeo();
+        $estados = $this->listEstadosDisponibles();
+
+        $estado = (string)$request->query('estado', '');
+        if (empty($estado) && Schema::hasColumn('afiliados', 'cvegeo') && !empty($afiliado->cvegeo)) {
+            $estado = $this->getEstadoNameFromCveEnt(substr((string)$afiliado->cvegeo, 0, 2));
+        }
+        if (empty($estado) && count($estados) > 0) {
+            $estado = $estados[0];
+        }
+
+        $municipios = $this->cargarMunicipiosDesdeGeo($estado);
 
         $selCve = $afiliado->cve_mun;
         if (!$selCve) {
@@ -159,27 +218,36 @@ class AfiliadoController extends Controller
             $selCve = $hit->cve_mun ?? null;
         }
 
+        $hasSeccionesCvegeo = Schema::hasColumn('secciones', 'cvegeo');
+        $hasAfiliadosCvegeo = Schema::hasColumn('afiliados', 'cvegeo');
+
         $secciones = DB::table('secciones')
             ->when(
                 $selCve,
                 fn($q) => $q->where('cve_mun', $selCve),
                 fn($q) => $q->where('municipio', $afiliado->municipio)
             )
+            ->when(
+                $hasSeccionesCvegeo && $hasAfiliadosCvegeo && !empty($afiliado->cvegeo),
+                fn($q) => $q->where('cvegeo', $afiliado->cvegeo)
+            )
             ->orderBy('seccion')
             ->pluck('seccion');
 
-        $rules    = $this->rulesUpdate($afiliado);
+        $rules = $this->rulesUpdate($afiliado);
         $required = $this->requiredMap($rules);
         $fullNameField = $this->fullNameField();
 
-        return view('afiliados.edit', compact('afiliado', 'municipios', 'secciones', 'required', 'fullNameField'));
+        return view('afiliados.edit', compact(
+            'afiliado', 'estados', 'estado', 'municipios', 'secciones', 'required', 'fullNameField'
+        ));
     }
 
     public function update(Request $request, Afiliado $afiliado)
     {
         $full = $this->fullNameField();
 
-        $raw  = $this->squish($request->input($full, $afiliado->{$full} ?? ''));
+        $raw = $this->squish($request->input($full, $afiliado->{$full} ?? ''));
         $name = Str::upper(Str::ascii($raw));
         $request->merge([$full => $name]);
 
@@ -192,7 +260,7 @@ class AfiliadoController extends Controller
         }
 
         $rules = $this->rulesUpdate($afiliado);
-        $data  = $request->validate($rules);
+        $data = $request->validate($rules);
 
         if (array_key_exists('observaciones', $data) && $data['observaciones'] !== null) {
             $data['observaciones'] = $this->squish($data['observaciones']);
@@ -200,6 +268,21 @@ class AfiliadoController extends Controller
 
         if (empty($data['fecha_convencimiento'])) {
             $data['fecha_convencimiento'] = now();
+        }
+
+        if (Schema::hasColumn('afiliados', 'cvegeo')) {
+            $estado = (string)($data['estado'] ?? $request->input('estado') ?? $request->query('estado') ?? '');
+            $cveEnt = null;
+
+            if (!empty($estado)) {
+                $cveEnt = $this->getCveEntFromEstado($estado);
+            } elseif (!empty($afiliado->cvegeo)) {
+                $cveEnt = substr((string)$afiliado->cvegeo, 0, 2);
+            } else {
+                $cveEnt = '16';
+            }
+
+            $data['cvegeo'] = $cveEnt . str_pad((string)($data['cve_mun'] ?? ''), 3, '0', STR_PAD_LEFT);
         }
 
         $data = $this->storeIneFiles($request, $data, $afiliado);
@@ -271,6 +354,8 @@ class AfiliadoController extends Controller
 
             'ine_frente'       => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
             'ine_reverso'      => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+
+            'estado'           => ['required', 'string', 'max:120'],
         ];
     }
 
@@ -302,6 +387,8 @@ class AfiliadoController extends Controller
 
             'ine_frente'       => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
             'ine_reverso'      => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+
+            'estado'           => ['required', 'string', 'max:120'],
         ];
     }
 
@@ -350,40 +437,36 @@ class AfiliadoController extends Controller
         return $map;
     }
 
-    private function cargarMunicipiosDesdeGeo()
+    private function cargarMunicipiosDesdeGeo(string $estado)
     {
-        $posibles = [
-            public_path('geo/michoacan.json'),
-            public_path('geo/16_michoacan.json'),
-            public_path('geo/16/municipios.json'),
-            public_path('geo/16/michoacan.json'),
-        ];
+        $path = $this->findEstadoGeoFile($estado);
 
-        foreach ($posibles as $ruta) {
-            if (is_file($ruta)) {
-                $raw = @file_get_contents($ruta);
-                $json = json_decode($raw, true);
-                if (isset($json['features']) && is_array($json['features'])) {
-                    $items = collect($json['features'])->map(function ($f) {
-                        $p = $f['properties'] ?? [];
-                        $cve = $p['CVE_MUN'] ?? $p['CVE_MUNI'] ?? $p['CVE_MPIO'] ?? null;
-                        if (!$cve && isset($p['CVEGEO'])) {
-                            $cve = substr((string)$p['CVEGEO'], -3);
-                        }
-                        $nom = $p['NOMGEO'] ?? $p['NOM_MUN'] ?? $p['NOM_MPIO'] ?? $p['NOMMUN'] ?? null;
+        if ($path && is_file($path)) {
+            $raw = @file_get_contents($path);
+            $json = json_decode($raw, true);
 
-                        if ($cve && $nom) {
-                            return (object)[
-                                'cve_mun'   => str_pad($cve, 3, '0', STR_PAD_LEFT),
-                                'municipio' => $nom,
-                            ];
-                        }
-                        return null;
-                    })->filter()->unique('cve_mun')->sortBy('municipio')->values();
+            if (isset($json['features']) && is_array($json['features'])) {
+                $items = collect($json['features'])->map(function ($f) {
+                    $p = $f['properties'] ?? [];
 
-                    if ($items->count() > 0) {
-                        return $items;
+                    $cve = $p['CVE_MUN'] ?? $p['CVE_MUNI'] ?? $p['CVE_MPIO'] ?? null;
+                    if (!$cve && isset($p['CVEGEO'])) {
+                        $cve = substr((string)$p['CVEGEO'], -3);
                     }
+                    $nom = $p['NOMGEO'] ?? $p['NOM_MUN'] ?? $p['NOM_MPIO'] ?? $p['NOMMUN'] ?? null;
+
+                    if ($cve !== null && $nom) {
+                        return (object)[
+                            'cve_mun'   => str_pad((string)$cve, 3, '0', STR_PAD_LEFT),
+                            'municipio' => (string)$nom,
+                        ];
+                    }
+
+                    return null;
+                })->filter()->unique('cve_mun')->sortBy('municipio')->values();
+
+                if ($items->count() > 0) {
+                    return $items;
                 }
             }
         }
@@ -397,6 +480,158 @@ class AfiliadoController extends Controller
                 $r->cve_mun = str_pad((string)$r->cve_mun, 3, '0', STR_PAD_LEFT);
                 return $r;
             });
+    }
+
+    private function listEstadosDisponibles(): array
+    {
+        $dir = public_path('geo');
+        if (!is_dir($dir)) return [];
+
+        $files = array_merge(
+            glob($dir . '/*.json') ?: [],
+            glob($dir . '/*.geojson') ?: []
+        );
+
+        $out = [];
+        foreach ($files as $p) {
+            $base = pathinfo($p, PATHINFO_FILENAME);
+            if ($base === '' || $this->normalize($base) === 'FEDERAL') continue;
+            $out[] = $base;
+        }
+
+        $out = array_values(array_unique($out));
+        usort($out, fn($a, $b) => strcmp($a, $b));
+        return $out;
+    }
+
+    private function findEstadoGeoFile(string $estado): ?string
+    {
+        $dir = public_path('geo');
+        if (!is_dir($dir)) return null;
+
+        $estado = trim((string)$estado);
+        if ($estado === '') $estado = 'Michoacan';
+
+        $target = $this->normalize($estado);
+
+        $files = array_merge(
+            glob($dir . '/*.json') ?: [],
+            glob($dir . '/*.geojson') ?: []
+        );
+
+        foreach ($files as $p) {
+            $base = pathinfo($p, PATHINFO_FILENAME);
+            if ($this->normalize($base) === $target) {
+                return $p;
+            }
+        }
+
+        $fallback = 'Michoacan';
+        $target2 = $this->normalize($fallback);
+        foreach ($files as $p) {
+            $base = pathinfo($p, PATHINFO_FILENAME);
+            if ($this->normalize($base) === $target2) {
+                return $p;
+            }
+        }
+
+        return null;
+    }
+
+    private function getCveEntFromEstado(?string $estado): string
+    {
+        if (empty($estado)) return '16';
+
+        $norm = $this->normalize($estado);
+
+        $map = [
+            'AGUASCALIENTES' => '01',
+            'BAJA CALIFORNIA' => '02',
+            'BAJA CALIFORNIA SUR' => '03',
+            'CAMPECHE' => '04',
+            'COAHUILA DE ZARAGOZA' => '05',
+            'COLIMA' => '06',
+            'CHIAPAS' => '07',
+            'CHIHUAHUA' => '08',
+            'CIUDAD DE MEXICO' => '09',
+            'DURANGO' => '10',
+            'GUANAJUATO' => '11',
+            'GUERRERO' => '12',
+            'HIDALGO' => '13',
+            'JALISCO' => '14',
+            'MEXICO' => '15',
+            'ESTADO DE MEXICO' => '15',
+            'MICHOACAN' => '16',
+            'MICHOACAN DE OCAMPO' => '16',
+            'MORELOS' => '17',
+            'NAYARIT' => '18',
+            'NUEVO LEON' => '19',
+            'OAXACA' => '20',
+            'PUEBLA' => '21',
+            'QUERETARO' => '22',
+            'QUINTANA ROO' => '23',
+            'SAN LUIS POTOSI' => '24',
+            'SINALOA' => '25',
+            'SONORA' => '26',
+            'TABASCO' => '27',
+            'TAMAULIPAS' => '28',
+            'TLAXCALA' => '29',
+            'VERACRUZ' => '30',
+            'VERACRUZ DE IGNACIO DE LA LLAVE' => '30',
+            'YUCATAN' => '31',
+            'ZACATECAS' => '32',
+        ];
+
+        return $map[$norm] ?? '16';
+    }
+
+    private function getEstadoNameFromCveEnt(string $cveEnt): string
+    {
+        $map = [
+            '01' => 'Aguascalientes',
+            '02' => 'Baja California',
+            '03' => 'Baja California Sur',
+            '04' => 'Campeche',
+            '05' => 'Coahuila de Zaragoza',
+            '06' => 'Colima',
+            '07' => 'Chiapas',
+            '08' => 'Chihuahua',
+            '09' => 'Ciudad de México',
+            '10' => 'Durango',
+            '11' => 'Guanajuato',
+            '12' => 'Guerrero',
+            '13' => 'Hidalgo',
+            '14' => 'Jalisco',
+            '15' => 'México',
+            '16' => 'Michoacan',
+            '17' => 'Morelos',
+            '18' => 'Nayarit',
+            '19' => 'Nuevo León',
+            '20' => 'Oaxaca',
+            '21' => 'Puebla',
+            '22' => 'Querétaro',
+            '23' => 'Quintana Roo',
+            '24' => 'San Luis Potosí',
+            '25' => 'Sinaloa',
+            '26' => 'Sonora',
+            '27' => 'Tabasco',
+            '28' => 'Tamaulipas',
+            '29' => 'Tlaxcala',
+            '30' => 'Veracruz de Ignacio de la Llave',
+            '31' => 'Yucatán',
+            '32' => 'Zacatecas',
+        ];
+
+        return $map[$cveEnt] ?? 'Michoacan';
+    }
+
+    private function normalize($s): string
+    {
+        $s = (string)($s ?? '');
+        $s = \Normalizer::normalize($s, \Normalizer::FORM_D) ?: $s;
+        $s = preg_replace('/[\p{Mn}]+/u', '', $s);
+        $s = preg_replace('/[^A-Z0-9 ]/iu', '', $s);
+        return strtoupper(trim($s));
     }
 
     private function squish($value): string

@@ -6,12 +6,8 @@
     "\\app\\Http\\Controllers",
     "\\resources",
     "\\resources\\views",
-    "\\resources\\views\\layouts",
-    "\\resources\\views\\mapa",
-    "\\resources\\views\\reportes",
-    "\\resources\\views\\settings",
-    "\\routes"
+    "\\resources\\views\\afiliados"
   ],
-  "SelectedNode": "\\resources\\views\\mapa\\index.blade.php",
+  "SelectedNode": "\\app\\Http\\Controllers\\AfiliadoController.php",
   "PreviewInSolutionExplorer": false
 }

@@ -24,13 +24,42 @@
         $perfilOpts = ['Coordinador' => 'Coordinador', 'Enlace' => 'Enlace', 'Apoyo' => 'Apoyo'];
 
         $munOld = old('municipio', $afiliado->municipio);
+
+        // Estado actual: (si ya lo mandas desde controller mejor; si no, cae a querystring)
+        $estado = $estado ?? request('estado', '');
+        // Si tu modelo ya trae estado guardado en BD en el futuro, puedes priorizarlo:
+        if (empty($estado) && !empty($afiliado->estado)) $estado = $afiliado->estado;
+
+        // Si ya existe cvegeo guardado en BD en el futuro, lo puedes mostrar. Si no, se calcula en JS.
+        $cvegeoOld = old('cvegeo', $afiliado->cvegeo ?? '');
       @endphp
 
       <form action="{{ route('afiliados.update', $afiliado->id) }}" method="POST" autocomplete="off" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
+        {{-- CLAVE: conservar el estado para CVEGEO (aunque no lo muestres) --}}
+        <input type="hidden" name="estado" id="txtEstado" value="{{ old('estado', $estado) }}">
+
+        {{-- (Opcional pero recomendado) CVEGEO para que el controller lo guarde si ya existe la columna --}}
+        <input type="hidden" name="cvegeo" id="txtCveGeo" value="{{ $cvegeoOld }}">
+
         <div class="row g-3">
+
+          {{-- Debug visual (puedes borrar estos 2 si no quieres verlos) --}}
+          <div class="col-md-4">
+            <label class="form-label">Estado (para CVEGEO)</label>
+            <input type="text" class="form-control" value="{{ $estado ?: 'No especificado' }}" readonly>
+            <small class="form-text text-muted">Se conserva para que no se mezclen municipios entre estados.</small>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">CVEGEO</label>
+            <input type="text" id="txtCveGeoView" class="form-control" value="{{ $cvegeoOld }}" readonly placeholder="16034">
+            <small class="form-text text-muted">Estado + CVE mun</small>
+          </div>
+
+          <div class="col-md-6"></div>
 
           <div class="col-md-6">
             <label class="form-label {{ $req($fullNameField) ? 'required' : '' }}">Nombre completo</label>
@@ -278,13 +307,62 @@ document.addEventListener('DOMContentLoaded', function(){
   const $dl  = document.querySelector('input[name="distrito_local"]');
   const $df  = document.querySelector('input[name="distrito_federal"]');
 
-  [$cve,$dl,$df].forEach(el=>{
-    if(!el) return;
-    el.readOnly = true;
-    ['keydown','paste','drop'].forEach(evt=>{
-      el.addEventListener(evt, e=>{ if(el.readOnly) e.preventDefault(); });
-    });
-  });
+  const $estado = document.querySelector('#txtEstado');
+  const $cvegeo = document.querySelector('#txtCveGeo');
+  const $cvegeoView = document.querySelector('#txtCveGeoView');
+
+  const mapCveEnt = {
+    'AGUASCALIENTES':'01',
+    'BAJA CALIFORNIA':'02',
+    'BAJA CALIFORNIA SUR':'03',
+    'CAMPECHE':'04',
+    'COAHUILA DE ZARAGOZA':'05',
+    'COLIMA':'06',
+    'CHIAPAS':'07',
+    'CHIHUAHUA':'08',
+    'CIUDAD DE MEXICO':'09',
+    'DURANGO':'10',
+    'GUANAJUATO':'11',
+    'GUERRERO':'12',
+    'HIDALGO':'13',
+    'JALISCO':'14',
+    'MEXICO':'15',
+    'ESTADO DE MEXICO':'15',
+    'MICHOACAN':'16',
+    'MICHOACAN DE OCAMPO':'16',
+    'MORELOS':'17',
+    'NAYARIT':'18',
+    'NUEVO LEON':'19',
+    'OAXACA':'20',
+    'PUEBLA':'21',
+    'QUERETARO':'22',
+    'QUINTANA ROO':'23',
+    'SAN LUIS POTOSI':'24',
+    'SINALOA':'25',
+    'SONORA':'26',
+    'TABASCO':'27',
+    'TAMAULIPAS':'28',
+    'TLAXCALA':'29',
+    'VERACRUZ':'30',
+    'YUCATAN':'31',
+    'ZACATECAS':'32',
+  };
+
+  function normalize(s){
+    return String(s||'')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^A-Z0-9 ]/gi,'')
+      .trim().toUpperCase();
+  }
+  const pad3 = v => (v==null ? '' : String(v).trim().padStart(3,'0'));
+  const squish = v => String(v||'').trim().replace(/\s+/g,' ');
+  let t=null;
+
+  function getCveEnt(){
+    const est = $estado ? squish($estado.value) : '';
+    const key = normalize(est);
+    return mapCveEnt[key] || '16';
+  }
 
   function syncCveFromMunicipio(){
     if(!$mun || !$cve) return;
@@ -293,15 +371,35 @@ document.addEventListener('DOMContentLoaded', function(){
     $cve.value = cve;
   }
 
+  function syncCveGeo(){
+    const ent = getCveEnt();
+    const mun = $cve ? pad3($cve.value) : '';
+    const val = (ent && mun) ? (String(ent) + String(mun)) : '';
+    if ($cvegeo) $cvegeo.value = val;
+    if ($cvegeoView) $cvegeoView.value = val;
+  }
+
+  [$cve,$dl,$df].forEach(el=>{
+    if(!el) return;
+    el.readOnly = true;
+    ['keydown','paste','drop'].forEach(evt=>{
+      el.addEventListener(evt, e=>{ if(el.readOnly) e.preventDefault(); });
+    });
+  });
+
   if ($mun) {
-    $mun.addEventListener('change', () => { syncCveFromMunicipio(); if ($sec.value) debouncedLookup(); });
+    $mun.addEventListener('change', () => {
+      syncCveFromMunicipio();
+      syncCveGeo();
+      if ($sec.value) debouncedLookup();
+    });
     syncCveFromMunicipio();
+    syncCveGeo();
+  } else {
+    syncCveGeo();
   }
 
   const endpoint = "{{ route('secciones.lookup') }}";
-  const pad3   = v => (v==null ? '' : String(v).trim().padStart(3,'0'));
-  const squish = v => String(v||'').trim().replace(/\s+/g,' ');
-  let t=null;
 
   async function fetchLookup(params){
     const url = endpoint + '?' + (new URLSearchParams(params)).toString();
@@ -313,12 +411,16 @@ document.addEventListener('DOMContentLoaded', function(){
   function fillFields(j, forceCanon){
     if ($dl) $dl.value = j.distrito_local ?? '';
     if ($df) $df.value = j.distrito_federal ?? '';
-    if ($cve && (forceCanon || !squish($cve.value)) && j.cve_mun) $cve.value = j.cve_mun;
+    if ($cve && (forceCanon || !squish($cve.value)) && j.cve_mun) $cve.value = pad3(j.cve_mun);
+
     if ($mun && (forceCanon || !squish($mun.value)) && j.municipio) {
       const val = j.municipio;
       const opt = Array.from($mun.options).find(o=>o.value===val);
-      if (opt) $mun.value = val, syncCveFromMunicipio();
+      if (opt) { $mun.value = val; syncCveFromMunicipio(); }
     }
+
+    syncCveGeo();
+
     [$dl,$df,$cve,$mun].forEach(el=>{
       if(!el) return;
       el.classList.remove('is-invalid');
@@ -334,6 +436,9 @@ document.addEventListener('DOMContentLoaded', function(){
     const strict = { seccion };
     if ($cve && squish($cve.value)) strict.cve_mun = pad3($cve.value);
     else if ($mun && squish($mun.value)) strict.municipio = squish($mun.value);
+
+    // si el endpoint soporta cvegeo, lo mandamos (si no, lo ignora)
+    strict.cvegeo = $cvegeo ? squish($cvegeo.value) : '';
 
     try { const j = await fetchLookup(strict); fillFields(j,false); return; }
     catch(e){}

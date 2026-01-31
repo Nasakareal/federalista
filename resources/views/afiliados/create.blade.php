@@ -19,14 +19,48 @@
       @php
         $req = fn($f) => !empty($required[$f] ?? false);
         $fullNameField = $fullNameField ?? 'nombre';
+
         $perfilOld = old('perfil', '');
         $perfilOpts = ['Coordinador' => 'Coordinador', 'Enlace' => 'Enlace', 'Apoyo' => 'Apoyo'];
+
+        $estado = old('estado', $estado ?? request('estado', ''));
+
+        $sexoOld  = old('sexo','');
+        $sexoOpts = ['M'=>'Hombre','F'=>'Mujer','Otro'=>'Otro'];
+
+        $estatusOld = old('estatus','pendiente');
+        $labelMap = ['pendiente'=>'Pendiente','validado'=>'Sí','descartado'=>'No'];
+        $badgeMap = ['pendiente'=>'secondary','validado'=>'success','descartado'=>'danger'];
+        $snMap    = ['pendiente'=>'Pendiente','validado'=>'SI','descartado'=>'NO'];
       @endphp
 
       <form action="{{ route('afiliados.store') }}" method="POST" autocomplete="off" enctype="multipart/form-data">
         @csrf
 
+        <input type="hidden" name="estado" id="txtEstado" value="{{ $estado }}">
+        <input type="hidden" name="cvegeo" id="txtCveGeo" value="{{ old('cvegeo') }}">
+
         <div class="row g-3">
+
+          <div class="col-md-4">
+            <label class="form-label {{ $req('estado') ? 'required' : '' }}">Estado</label>
+            <select name="estado_select" id="slEstado"
+                    class="form-select @error('estado') is-invalid @enderror"
+                    {{ $req('estado') ? 'required' : '' }}>
+              <option value="">-- Selecciona --</option>
+              @foreach(($estados ?? []) as $e)
+                <option value="{{ $e }}" {{ $estado===$e ? 'selected' : '' }}>{{ $e }}</option>
+              @endforeach
+            </select>
+            @error('estado')<div class="invalid-feedback">{{ $message }}</div>@enderror
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">CVEGEO</label>
+            <input type="text" id="txtCveGeoView" value="{{ old('cvegeo') }}" readonly class="form-control" placeholder="16053">
+          </div>
+
+          <div class="col-md-6"></div>
 
           <div class="col-md-6">
             <label class="form-label {{ $req($fullNameField) ? 'required' : '' }}">Nombre completo</label>
@@ -49,10 +83,6 @@
 
           <div class="col-md-4">
             <label class="form-label">Sexo</label>
-            @php
-              $sexoOld  = old('sexo','');
-              $sexoOpts = ['M'=>'Hombre','F'=>'Mujer','Otro'=>'Otro'];
-            @endphp
             <select name="sexo" class="form-select @error('sexo') is-invalid @enderror">
               <option value="" {{ $sexoOld===''?'selected':'' }}>Seleccione…</option>
               @foreach($sexoOpts as $val => $label)
@@ -84,7 +114,7 @@
                     class="form-select @error('municipio') is-invalid @enderror"
                     {{ $req('municipio') ? 'required' : '' }}>
               <option value="">-- Selecciona --</option>
-              @foreach($municipios as $m)
+              @foreach(($municipios ?? collect()) as $m)
                 <option value="{{ $m->municipio }}"
                         data-cve="{{ str_pad($m->cve_mun,3,'0',STR_PAD_LEFT) }}"
                         {{ old('municipio')===$m->municipio?'selected':'' }}>
@@ -210,13 +240,6 @@
           </div>
 
           <div class="col-md-3">
-            @php
-              $estatusOld = old('estatus','pendiente');
-              $labelMap = ['pendiente'=>'Pendiente','validado'=>'Sí','descartado'=>'No'];
-              $badgeMap = ['pendiente'=>'secondary','validado'=>'success','descartado'=>'danger'];
-              $snMap    = ['pendiente'=>'Pendiente','validado'=>'SI','descartado'=>'NO'];
-            @endphp
-
             <label class="form-label {{ $req('estatus') ? 'required' : '' }}">Afiliado</label>
             <select name="estatus" class="form-select @error('estatus') is-invalid @enderror"
                     {{ $req('estatus') ? 'required' : '' }}>
@@ -254,13 +277,95 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function(){
-  const $sec = document.querySelector('input[name="seccion"], select[name="seccion"]');
-  if (!$sec) return;
+  const $estadoSel = document.querySelector('#slEstado');
+  const $estadoTxt = document.querySelector('#txtEstado');
 
+  const $sec = document.querySelector('input[name="seccion"], select[name="seccion"]');
   const $cve = document.querySelector('#txtCveMun');
   const $mun = document.querySelector('#slMunicipio');
   const $dl  = document.querySelector('input[name="distrito_local"]');
   const $df  = document.querySelector('input[name="distrito_federal"]');
+
+  const $cvegeo = document.querySelector('#txtCveGeo');
+  const $cvegeoView = document.querySelector('#txtCveGeoView');
+
+  const mapCveEnt = {
+    'AGUASCALIENTES':'01',
+    'BAJA CALIFORNIA':'02',
+    'BAJA CALIFORNIA SUR':'03',
+    'CAMPECHE':'04',
+    'COAHUILA DE ZARAGOZA':'05',
+    'COLIMA':'06',
+    'CHIAPAS':'07',
+    'CHIHUAHUA':'08',
+    'CIUDAD DE MEXICO':'09',
+    'DURANGO':'10',
+    'GUANAJUATO':'11',
+    'GUERRERO':'12',
+    'HIDALGO':'13',
+    'JALISCO':'14',
+    'MEXICO':'15',
+    'ESTADO DE MEXICO':'15',
+    'MICHOACAN':'16',
+    'MICHOACAN DE OCAMPO':'16',
+    'MORELOS':'17',
+    'NAYARIT':'18',
+    'NUEVO LEON':'19',
+    'OAXACA':'20',
+    'PUEBLA':'21',
+    'QUERETARO':'22',
+    'QUINTANA ROO':'23',
+    'SAN LUIS POTOSI':'24',
+    'SINALOA':'25',
+    'SONORA':'26',
+    'TABASCO':'27',
+    'TAMAULIPAS':'28',
+    'TLAXCALA':'29',
+    'VERACRUZ':'30',
+    'VERACRUZ DE IGNACIO DE LA LLAVE':'30',
+    'YUCATAN':'31',
+    'ZACATECAS':'32',
+  };
+
+  function normalize(s){
+    return String(s||'')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^A-Z0-9 ]/gi,'')
+      .trim().toUpperCase();
+  }
+  const pad3 = v => (v==null ? '' : String(v).trim().padStart(3,'0'));
+  const squish = v => String(v||'').trim().replace(/\s+/g,' ');
+
+  function getCveEnt(){
+    const est = $estadoTxt ? squish($estadoTxt.value) : '';
+    const key = normalize(est);
+    return mapCveEnt[key] || '16';
+  }
+
+  function syncCveFromMunicipio(){
+    if(!$mun || !$cve) return;
+    const opt = $mun.options[$mun.selectedIndex];
+    const cve = (opt && opt.dataset && opt.dataset.cve) ? String(opt.dataset.cve).padStart(3,'0') : '';
+    $cve.value = cve;
+  }
+
+  function syncCveGeo(){
+    const ent = getCveEnt();
+    const mun = $cve ? pad3($cve.value) : '';
+    const val = (ent && mun) ? (String(ent) + String(mun)) : '';
+    if ($cvegeo) $cvegeo.value = val;
+    if ($cvegeoView) $cvegeoView.value = val;
+  }
+
+  if ($estadoSel && $estadoTxt) {
+    $estadoSel.addEventListener('change', function(){
+      const v = squish($estadoSel.value);
+      $estadoTxt.value = v;
+      const url = new URL(window.location.href);
+      if (v) url.searchParams.set('estado', v); else url.searchParams.delete('estado');
+      window.location.href = url.toString();
+    });
+  }
 
   [$cve,$dl,$df].forEach(el=>{
     if(!el) return;
@@ -270,20 +375,19 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   });
 
-  function syncCveFromMunicipio(){
-    if(!$mun || !$cve) return;
-    const opt = $mun.options[$mun.selectedIndex];
-    const cve = (opt && opt.dataset && opt.dataset.cve) ? String(opt.dataset.cve).padStart(3,'0') : '';
-    $cve.value = cve;
-  }
   if ($mun) {
-    $mun.addEventListener('change', () => { syncCveFromMunicipio(); if ($sec.value) debouncedLookup(); });
+    $mun.addEventListener('change', () => {
+      syncCveFromMunicipio();
+      syncCveGeo();
+      if ($sec && $sec.value) debouncedLookup();
+    });
     syncCveFromMunicipio();
   }
+  syncCveGeo();
+
+  if (!$sec) return;
 
   const endpoint = "{{ route('secciones.lookup') }}";
-  const pad3   = v => (v==null ? '' : String(v).trim().padStart(3,'0'));
-  const squish = v => String(v||'').trim().replace(/\s+/g,' ');
   let t=null;
 
   async function fetchLookup(params){
@@ -296,12 +400,16 @@ document.addEventListener('DOMContentLoaded', function(){
   function fillFields(j, forceCanon){
     if ($dl) $dl.value = j.distrito_local ?? '';
     if ($df) $df.value = j.distrito_federal ?? '';
-    if ($cve && (forceCanon || !squish($cve.value)) && j.cve_mun) $cve.value = j.cve_mun;
+    if ($cve && (forceCanon || !squish($cve.value)) && j.cve_mun) $cve.value = pad3(j.cve_mun);
+
     if ($mun && (forceCanon || !squish($mun.value)) && j.municipio) {
       const val = j.municipio;
       const opt = Array.from($mun.options).find(o=>o.value===val);
-      if (opt) $mun.value = val, syncCveFromMunicipio();
+      if (opt) { $mun.value = val; syncCveFromMunicipio(); }
     }
+
+    syncCveGeo();
+
     [$dl,$df,$cve,$mun].forEach(el=>{
       if(!el) return;
       el.classList.remove('is-invalid');
@@ -315,8 +423,11 @@ document.addEventListener('DOMContentLoaded', function(){
     if (!seccion) return;
 
     const strict = { seccion };
+
     if ($cve && squish($cve.value)) strict.cve_mun = pad3($cve.value);
     else if ($mun && squish($mun.value)) strict.municipio = squish($mun.value);
+
+    if ($cvegeo && squish($cvegeo.value)) strict.cvegeo = squish($cvegeo.value);
 
     try { const j = await fetchLookup(strict); fillFields(j,false); return; }
     catch(e){}
